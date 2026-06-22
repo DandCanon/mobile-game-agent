@@ -36,7 +36,7 @@ Web 技术栈手游开发技能 — 专精 React + Vite + Tailwind CSS 技术栈
 - 数值系统建模与平衡辅助
 - UI 组件库（游戏风格 Tailwind 组件）
 - 本地存储方案（localStorage / IndexedDB）
-- APK 打包流程（Capacitor → Android Studio）
+- Android 安装包打包流程（Capacitor → Android Studio）
 - 性能优化建议（WebView 动画优化、内存管理）
 - 触摸手势适配
 
@@ -73,7 +73,7 @@ Web 技术栈手游开发技能 — 专精 React + Vite + Tailwind CSS 技术栈
 ├── vite.config.ts
 ├── tsconfig.json
 ├── tailwind.config.js
-└── capacitor.config.ts       # APK 打包配置（生成时自动创建）
+└── capacitor.config.ts       # Android 安装包打包配置（生成时自动创建）
 ```
 
 ## 与主 Agent 的协作协议

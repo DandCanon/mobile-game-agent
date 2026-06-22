@@ -165,7 +165,7 @@ describe('MockDeviceController', () => {
     it('should return success with inferred package name', () => {
       const result = controller.installApk(
         'emulator-5554',
-        '/path/to/my-game.apk',
+        '/path/to/my-game.androidpkg',
       );
       expect(result.success).toBe(true);
       expect(result.packageName).toBe('com.mock.my-game');
@@ -175,7 +175,7 @@ describe('MockDeviceController', () => {
     it('should handle paths with underscores', () => {
       const result = controller.installApk(
         'emulator-5554',
-        '/build/com.example.game_v2.apk',
+        '/build/com.example.game_v2.androidpkg',
       );
       expect(result.success).toBe(true);
       expect(result.packageName).toBe('com.mock.com.example.game_v2');

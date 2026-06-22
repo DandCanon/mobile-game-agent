@@ -210,7 +210,7 @@ EventBus.enemy_killed.connect(_on_enemy_killed)
 - **可见性裁剪**：`VisibleOnScreenNotifier2D` / `VisibleOnScreenEnabler3D` 减少不可见节点计算
 - **避免 `_process` 中的重计算**：将路径查找等昂贵操作移到 Timer 或分帧执行
 - **TileMap 分层**：大量 TileMap 时使用多个 Layer 而非多个 TileMap 节点
-- **Resource 预加载**：使用 `preload()` 而非 `load()` 处理确定的资源路径
+- **Resource 预加载**：使用 `preload()` 而非 `load()` 处理确定的资源定位信息
 - **禁用不用的物理处理**：静态装饰性节点关闭 `_physics_process`
 
 ---

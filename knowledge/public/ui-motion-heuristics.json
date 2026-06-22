@@ -1,0 +1,72 @@
+{
+  "packId": "public-ui-motion-heuristics",
+  "sourcePolicy": "Public-safe generalized heuristic. Contains no extracted assets, paths, names, proprietary values, or private reports.",
+  "cards": [
+    {
+      "id": "public-ui-window-system",
+      "type": "public-ui-motion-heuristic",
+      "title": "Mobile RPG Window System",
+      "tags": ["ui", "mobile", "rpg", "window", "界面", "UI", "修仙"],
+      "summary": "Large mobile RPG interfaces should separate feature windows, shared components, notification states, and reward feedback.",
+      "designRules": [
+        "Use shared reward, inventory, upgrade, and currency components.",
+        "Make notification-dot state explicit in the data model.",
+        "Design repeated screens for quick scanning and one-handed interaction."
+      ],
+      "mgaiUsage": "Generate WindowSpec, SharedComponentSpec, NotificationSpec, and RewardFeedbackSpec for each feature.",
+      "schema": {
+        "WindowSpec": {
+          "id": "string",
+          "purpose": "string",
+          "sharedComponents": "string[]",
+          "notificationStates": "string[]",
+          "primaryActions": "string[]"
+        }
+      }
+    },
+    {
+      "id": "public-ui-feedback-staging",
+      "type": "public-ui-motion-heuristic",
+      "title": "Readable Reward and Combat Feedback",
+      "tags": ["ui", "motion", "vfx", "feedback", "动效", "特效"],
+      "summary": "Repeated game feedback should be short, staged, readable, and scaled by event importance.",
+      "designRules": [
+        "Use a five-stage feedback sequence: anticipation, action, impact, result, confirmation.",
+        "Keep common interactions short; reserve longer animations for rare milestones.",
+        "Avoid stacking too many glow and particle effects on mobile screens."
+      ],
+      "mgaiUsage": "Generate FeedbackSpec with duration, easing, intensity, interruption policy, and accessibility fallback.",
+      "schema": {
+        "FeedbackSpec": {
+          "event": "string",
+          "durationMs": "number",
+          "intensity": "low | medium | high",
+          "easing": "string",
+          "canInterrupt": "boolean"
+        }
+      }
+    },
+    {
+      "id": "public-ui-paid-preview-flow",
+      "type": "public-ui-motion-heuristic",
+      "title": "Paid Cosmetic Preview Flow",
+      "tags": ["ui", "fashion", "shop", "preview", "时装", "商城"],
+      "summary": "Paid cosmetics need a clear preview, value explanation, ownership state, and reward reveal flow.",
+      "designRules": [
+        "Separate preview interaction from purchase confirmation.",
+        "Show ownership, locked, equipped, and claimable states distinctly.",
+        "Use reveal motion to celebrate acquisition, not to obscure price or ownership."
+      ],
+      "mgaiUsage": "Generate CosmeticOfferFlow with preview, purchase, owned, equipped, and reveal states.",
+      "schema": {
+        "CosmeticOfferFlow": {
+          "previewState": "string",
+          "purchaseState": "string",
+          "ownedState": "string",
+          "equippedState": "string",
+          "revealFeedback": "FeedbackSpec"
+        }
+      }
+    }
+  ]
+}

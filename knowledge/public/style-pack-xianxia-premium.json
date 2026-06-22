@@ -1,0 +1,36 @@
+{
+  "packId": "public-style-pack-xianxia-premium",
+  "sourcePolicy": "Public-safe generalized heuristic. Contains no extracted assets, paths, names, proprietary values, or private reports.",
+  "cards": [
+    {
+      "id": "public-style-xianxia-premium",
+      "type": "public-style-pack",
+      "title": "Premium Xianxia Art Direction Checklist",
+      "tags": ["xianxia", "premium", "art-direction", "修仙", "美术", "法宝", "时装", "UI"],
+      "summary": "A premium xianxia style pack should balance restrained elegance, readable systems, layered rarity expression, and milestone-focused spectacle.",
+      "designRules": [
+        "Use restrained base palettes and reserve high-intensity glow for milestones.",
+        "Define separate rules for character silhouette, artifact identity, UI panels, and reward effects.",
+        "Use original names and motifs created for the project; do not derive names from private references.",
+        "Create checklist-driven briefs before producing art or motion assets."
+      ],
+      "mgaiUsage": "Generate ArtDirectionChecklist and StyleTokenPack for xianxia idle or RPG projects.",
+      "schema": {
+        "ArtDirectionChecklist": {
+          "paletteRules": "string[]",
+          "silhouetteRules": "string[]",
+          "artifactRules": "string[]",
+          "uiPanelRules": "string[]",
+          "rewardFeedbackRules": "string[]",
+          "antiPatterns": "string[]"
+        },
+        "StyleTokenPack": {
+          "primaryPalette": "string[]",
+          "rarityPalette": "Record<string, string>",
+          "motionIntensity": "low | medium | high",
+          "texturePolicy": "original-only"
+        }
+      }
+    }
+  ]
+}

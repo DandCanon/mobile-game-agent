@@ -1,0 +1,73 @@
+{
+  "packId": "public-game-art-heuristics",
+  "sourcePolicy": "Public-safe generalized heuristic. Contains no extracted assets, paths, names, proprietary values, or private reports.",
+  "cards": [
+    {
+      "id": "public-art-costume-slots",
+      "type": "public-art-heuristic",
+      "title": "Modular RPG Costume Slot System",
+      "tags": ["rpg", "costume", "fashion", "liveops", "时装", "外观", "修仙"],
+      "summary": "For long-term RPG cosmetics, model outfits as composable slots rather than single images.",
+      "designRules": [
+        "Separate silhouette, garment, accessory, aura, and rarity-effect layers.",
+        "Create a preview scene and ownership state for paid fashion.",
+        "Use rarity VFX sparingly to avoid visual clutter."
+      ],
+      "mgaiUsage": "Generate CostumeSlotSpec with slot roles, rarity treatment, preview state, ownership state, and fallback rendering.",
+      "schema": {
+        "CostumeSlotSpec": {
+          "silhouetteLayer": "string",
+          "garmentLayer": "string",
+          "accessoryLayer": "string[]",
+          "auraLayer": "string | null",
+          "rarityEffect": "RarityEffectSpec"
+        }
+      }
+    },
+    {
+      "id": "public-art-artifact-loop",
+      "type": "public-art-heuristic",
+      "title": "Artifact Visual Identity Loop",
+      "tags": ["rpg", "artifact", "weapon", "vfx", "法宝", "灵宝", "修仙"],
+      "summary": "Important RPG artifacts should have a consistent identity across inventory, detail view, equipped state, and skill feedback.",
+      "designRules": [
+        "Give each artifact family a clear silhouette and motion motif.",
+        "Separate icon readability from full-screen reveal impact.",
+        "Use upgrade and awakening states as visual milestones."
+      ],
+      "mgaiUsage": "Generate ArtifactVisualSpec with icon rules, detail card layout, equipped pose, skill feedback, and upgrade milestones.",
+      "schema": {
+        "ArtifactVisualSpec": {
+          "family": "string",
+          "silhouette": "string",
+          "motionMotif": "string",
+          "upgradeStates": "string[]",
+          "feedbackHooks": "FeedbackSpec[]"
+        }
+      }
+    },
+    {
+      "id": "public-art-scene-painting-brief",
+      "type": "public-art-heuristic",
+      "title": "High-Value Scene Painting Brief",
+      "tags": ["rpg", "scene", "background", "event", "ui", "美术", "场景"],
+      "summary": "High-value feature entrances benefit from scene briefs that define subject, mood, camera, UI-safe areas, and motion layers.",
+      "designRules": [
+        "Reserve illustrated scene treatment for major milestones and premium entry points.",
+        "Define UI-safe areas before producing art.",
+        "Separate ambient motion layers from core UI interaction layers."
+      ],
+      "mgaiUsage": "Generate ScenePaintingBrief with subject, mood, camera angle, safe areas, palette, and motion layer notes.",
+      "schema": {
+        "ScenePaintingBrief": {
+          "subject": "string",
+          "mood": "string",
+          "cameraAngle": "string",
+          "uiSafeAreas": "string",
+          "palette": "string",
+          "motionLayers": "string[]"
+        }
+      }
+    }
+  ]
+}

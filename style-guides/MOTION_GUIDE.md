@@ -1,7 +1,7 @@
-# Motion Guide — 像素刷宝霓虹
+# Motion Guide — 修仙水墨典雅
 
-> 风格包：pixel-loot-neon
-> 引擎：godot
+> 风格包：xianxia-ink-premium
+> 引擎：react-vite-tailwind
 > 生成时间：2026-06-22
 
 ## 动效 Token 目录
@@ -59,31 +59,18 @@
 
 **Unity**：`DOTween: rectTransform.DOAnchorPos(target, 0.4f).SetEase(Ease.OutBack)`
 
-### mt-rare-drop — rare-drop
+### mt-hover-lift — hover-lift
 
-- **分类**：rarity
-- **时长**：600ms (long)
-- **缓动**：ease-out-bounce
-- **描述**：稀有掉落：发光脉冲 + 掉落弹跳 + 稀有度光柱
-
-**Web**：`box-shadow glow pulse + translateY bounce, 600ms ease-out-bounce`
-
-**Godot**：`Tween modulate pulse + position.y bounce, 0.6s, TRANS_BOUNCE. Light2D/particle beam`
-
-**Unity**：`DOTween: scale pulse + bounce, 0.6s. ParticleSystem beam effect`
-
-### mt-combat-hit — combat-hit
-
-- **分类**：combat
-- **时长**：80ms (instant)
+- **分类**：hover
+- **时长**：200ms (quick)
 - **缓动**：ease-out
-- **描述**：受击反馈：短暂闪白 + 轻微位移
+- **描述**：悬停浮起：卡片轻微上浮 + 阴影加深
 
-**Web**：`filter: brightness(2) 80ms + translateX shake`
+**Web**：`transform: translateY(-2px); box-shadow increase. transition 200ms ease-out`
 
-**Godot**：`modulate = Color.WHITE briefly, Tween position shake, 0.08s`
+**Godot**：`Tween position.y -2px + modulate shadow overlay. 0.2s, TRANS_SINE`
 
-**Unity**：`SpriteRenderer.color flash white, transform.DOShakePosition(0.08f)`
+**Unity**：`DOTween: rectTransform.DOAnchorPosY(-2f, 0.2f).SetEase(Ease.OutSine)`
 
 ### mt-level-up — level-up
 
@@ -112,21 +99,19 @@
 **Unity**：`DOTween: RectTransform.DOSizeDelta + CanvasGroup.DOFade, 0.18f`
 
 
-## Godot 4.x 动效实现
+## Web (React + Tailwind) 动效实现
 
-所有动效 Token 在 Godot 中的推荐实现方式：
+所有动效 Token 在 Web 端的推荐实现方式：
 
-| 需求 | Godot 实现 |
-|------|-----------|
-| 缩放/位移动画 | `Tween` + `tween_property()` |
-| 序列动画 | `AnimationPlayer` + Animation 资源 |
-| UI 过渡 | `Tween` + Control 节点属性 |
-| 粒子效果 | `GPUParticles2D` / `CPUParticles2D` |
-| 颜色/透明度 | `modulate` / `self_modulate` Tween |
-| 主题样式 | `Theme` 资源 + `ThemeTypeVariation` |
+| 需求 | Web 实现 |
+|------|---------|
+| CSS 过渡 | Tailwind `transition-*` + `duration-*` |
+| CSS 动画 | `@keyframes` + `animation-*` |
+| 复杂动效 | framer-motion / Motion One |
+| Canvas 粒子 | PixiJS ParticleContainer |
+| SVG 动效 | CSS animation / SMIL |
 
 关键约束：
-- 动效时长控制在 Token 定义的 duration 范围内
-- 使用 `TRANS_BACK` / `TRANS_BOUNCE` 对应 CSS ease-out-back / ease-out-bounce
-- 像素风格禁止亚像素移动，所有 position Tween 取整
-- UI 动效在 `_ready()` 中设置初始状态，避免首帧闪烁
+- GPU 加速属性优先（transform、opacity），避免动画 width/height
+- `will-change` 仅在动画前后设置，避免内存泄漏
+- 60fps 目标：单页面同时在运动元素 ≤ 20

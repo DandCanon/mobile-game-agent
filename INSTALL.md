@@ -206,7 +206,7 @@ import { createLLMClient, OpenAIClient } from 'mgai/orchestration/llm-client';
 const client = createLLMClient({
   provider: 'openai',        // 'openai' | 'openai-compatible' | 'claude'
   model: 'gpt-4o',           // 默认 gpt-4o
-  apiKey: 'sk-xxx',          // 也可通过环境变量 OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY, // 不要把密钥写入仓库
   timeoutMs: 60000,          // 默认 60s
 });
 

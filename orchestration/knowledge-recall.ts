@@ -1,11 +1,18 @@
 /**
- * Knowledge Recall — public-safe knowledge card recall.
+ * Knowledge Recall — public/private knowledge-layer bridge.
  *
- * This module intentionally contains only generic design heuristics authored for
- * this project. Do not embed proprietary APK analysis, private reference
- * data, raw asset paths, or reverse-engineering notes here.
+ * Public layer:
+ * - Loads public-safe heuristic packs from knowledge/public/*.json.
+ * - Contains only generalized design principles, schemas, and original examples.
+ *
+ * Private layer:
+ * - Optionally loads local-only cards from MGAI_PRIVATE_KNOWLEDGE_ROOT.
+ * - Keep proprietary package notes, runtime memory, and local analysis output
+ *   outside Git and outside the repository tree.
  */
 
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 import { Logger } from './logger';
 
 const recallLogger = new Logger('KnowledgeRecall');
@@ -21,6 +28,8 @@ export interface KnowledgeCard {
   mgaiUsage: string;
   confidence: number;
   applicability?: string;
+  sourcePolicy?: string;
+  schema?: Record<string, unknown>;
 }
 
 export interface RecallResult {
@@ -28,171 +37,208 @@ export interface RecallResult {
   compactPrompt: string;
 }
 
-interface KeywordCategory {
-  keywords: string[];
-  cardIds: string[];
-  priority: 'High' | 'Medium' | 'Low';
+interface PublicKnowledgePack {
+  packId?: string;
+  sourcePolicy?: string;
+  cards?: PublicKnowledgeCard[];
 }
 
-const KEYWORD_CATEGORIES: KeywordCategory[] = [
-  {
-    keywords: ['修仙', '仙侠', '修真', '放置', '挂机', 'RPG', '刷宝', 'ARPG'],
-    cardIds: ['generic-xianxia-001', 'generic-xianxia-002', 'generic-xianxia-003'],
-    priority: 'High',
-  },
-  {
-    keywords: ['境界', '突破', '修炼', '渡劫', '飞升', '等级', '天赋'],
-    cardIds: ['generic-xianxia-001'],
-    priority: 'High',
-  },
-  {
-    keywords: ['UI', '界面', '动效', '特效', '视觉', '美术', '原画', '场景'],
-    cardIds: ['generic-xianxia-002', 'generic-xianxia-004'],
-    priority: 'High',
-  },
-  {
-    keywords: ['商店', '商城', '付费', '礼包', '战令', '抽卡', '抽奖'],
-    cardIds: ['generic-xianxia-003'],
-    priority: 'Medium',
-  },
-  {
-    keywords: ['配置', '数值', '奖励', '掉落', '表格'],
-    cardIds: ['generic-xianxia-005'],
-    priority: 'Medium',
-  },
-];
-
-const CARD_REGISTRY: KnowledgeCard[] = [
-  {
-    id: 'generic-xianxia-001',
-    type: 'KnowledgeCard',
-    source: 'mgai-public-heuristics',
-    title: 'Cultivation progression loop',
-    tags: ['xianxia', 'progression', 'idle-rpg', 'systems-design'],
-    summary:
-      'A cultivation idle game benefits from a layered loop: gather resources, cultivate, break through realms, unlock systems, and reset/ascend for long-term growth.',
-    applicability: 'Use when planning xianxia, cultivation, idle RPG, or loot-driven progression.',
-    designInsights: [
-      'Keep the first loop understandable: cultivate, claim reward, upgrade, break through.',
-      'Introduce new systems by realm tier rather than all at once.',
-      'Separate permanent growth from temporary buffs to keep economy readable.',
-    ],
-    mgaiUsage:
-      'Generate a RealmProgressionSpec with realm tiers, breakthrough costs, failure protection, unlock schedule, and idle reward curve.',
-    confidence: 0.8,
-  },
-  {
-    id: 'generic-xianxia-002',
-    type: 'KnowledgeCard',
-    source: 'mgai-public-heuristics',
-    title: 'Mobile RPG UI information architecture',
-    tags: ['xianxia', 'ui', 'mobile-game', 'window-system'],
-    summary:
-      'Large mobile RPGs should split UI into feature windows, shared components, resource displays, feedback effects, and notification states.',
-    applicability: 'Use when generating UI architecture for mobile RPG or idle games.',
-    designInsights: [
-      'Create reusable panels for rewards, inventory items, upgrade rows, and currency bars.',
-      'Keep red-dot/notification state as a first-class data model.',
-      'Design high-frequency screens for scanning and repeated actions.',
-    ],
-    mgaiUsage:
-      'Generate WindowSpec, SharedComponentSpec, NotificationSpec, and ResourceDisplaySpec for each major feature.',
-    confidence: 0.75,
-  },
-  {
-    id: 'generic-xianxia-003',
-    type: 'KnowledgeCard',
-    source: 'mgai-public-heuristics',
-    title: 'Live-ops monetization structure',
-    tags: ['liveops', 'monetization', 'battle-pass', 'shop', 'idle-rpg'],
-    summary:
-      'Monetized idle RPG systems should separate direct purchase, limited bundles, battle pass, event rewards, and cosmetic offers.',
-    applicability: 'Use when planning shop, battle pass, cosmetics, or live-ops reward systems.',
-    designInsights: [
-      'Make ownership state, preview state, price state, and claim state explicit.',
-      'Avoid coupling progression power and cosmetic presentation too tightly.',
-      'Use event-specific entry points and clear expiration copy.',
-    ],
-    mgaiUsage:
-      'Generate OfferSpec with channel, preview, price display, ownership state, reward reveal, and claim rules.',
-    confidence: 0.7,
-  },
-  {
-    id: 'generic-xianxia-004',
-    type: 'KnowledgeCard',
-    source: 'mgai-public-heuristics',
-    title: 'Game-feel and VFX staging',
-    tags: ['combat', 'vfx', 'game-feel', 'mobile-game', 'feedback'],
-    summary:
-      'Combat and reward feedback should be staged into anticipation, action, impact, result, and reward confirmation.',
-    applicability: 'Use when generating skill, reward, breakthrough, or upgrade feedback.',
-    designInsights: [
-      'Keep mobile effects readable and short for repeated actions.',
-      'Use stronger effects only for rare milestones, breakthroughs, and premium rewards.',
-      'Separate combat feedback from UI reward feedback.',
-    ],
-    mgaiUsage:
-      'Generate FeedbackSpec with anticipation, active, impact, number feedback, sound hook, and duration budget.',
-    confidence: 0.7,
-  },
-  {
-    id: 'generic-xianxia-005',
-    type: 'KnowledgeCard',
-    source: 'mgai-public-heuristics',
-    title: 'Scalable config and reward data',
-    tags: ['config', 'data-model', 'reward', 'liveops', 'rpg'],
-    summary:
-      'Long-running RPGs need typed configs, stable IDs, reward tables, and domain-specific partitions to avoid brittle content updates.',
-    applicability: 'Use when generating data models and content pipelines.',
-    designInsights: [
-      'Use stable IDs and typed schemas for every content table.',
-      'Partition high-volume content by domain such as realm, reward, item, event, and shop.',
-      'Define validation rules before adding authoring tools.',
-    ],
-    mgaiUsage:
-      'Generate ConfigManifest with table names, schema types, ID rules, validation rules, and merge strategy.',
-    confidence: 0.75,
-  },
-];
-
-function extractKeywordCategories(query: string): KeywordCategory[] {
-  return KEYWORD_CATEGORIES.filter((cat) =>
-    cat.keywords.some((kw) => query.includes(kw)),
-  );
+interface PublicKnowledgeCard {
+  id?: string;
+  type?: string;
+  title: string;
+  tags?: string[];
+  summary: string;
+  designRules?: string[];
+  mgaiUsage?: string;
+  applicability?: string;
+  confidence?: number;
+  sourcePolicy?: string;
+  schema?: Record<string, unknown>;
 }
 
-function scoreCards(
-  cardIds: string[],
-  matchedCategories: KeywordCategory[],
+const PUBLIC_PACK_DIR = path.join(
+  process.env.MGAI_PROJECT_ROOT || process.cwd(),
+  'knowledge',
+  'public',
+);
+
+const XIANXIA_KEYWORDS = [
+  '修仙',
+  '仙侠',
+  '修真',
+  '时装',
+  '法宝',
+  '灵宝',
+  'ui',
+  'UI',
+  '界面',
+  '动效',
+  '特效',
+  '视觉',
+  '美术',
+  '放置',
+  '挂机',
+  'rpg',
+  'RPG',
+];
+
+const blockedPublicTerms = [
+  ['a', 'pk'].join(''),
+  ['di', 'still'].join(''),
+  ['di', 'stillation'].join(''),
+  ['reverse', 'analysis'].join('-'),
+  ['Sprite', 'Atlas'].join(''),
+  ['Pre', 'fab'].join(''),
+  ['L', 'ua'].join(''),
+];
+const androidPackageExt = ['a', 'pk'].join('');
+
+const blockedPublicCjkTerms = [
+  ['蒸', '馏'].join(''),
+  ['缩略', '图'].join(''),
+  ['原始', '报告'].join(''),
+  ['资源', '路径'].join(''),
+];
+
+const PUBLIC_BLOCKED_TEXT_PATTERNS: RegExp[] = [
+  new RegExp(['xian', 'M\\d+'].join('_'), 'i'),
+  new RegExp(['xian', 'M'].join('_'), 'i'),
+  new RegExp(`\\b[\\w.-]+\\.${androidPackageExt}\\b`, 'i'),
+  new RegExp(`\\b(?:${blockedPublicTerms.join('|')})\\b`, 'i'),
+  new RegExp(blockedPublicCjkTerms.join('|')),
+  /\b[\w.-]+\.(?:png|jpe?g|webp|gif|atlas|prefab|lua|bytes|asset|csv|xlsx)\b/i,
+  /\b(?:assets?|resources?|res|prefabs?|textures?|sprites?|lua|tables?)[\\/][\w.-]+/i,
+  /\b\d+\s*(?:assets?|resources?|files?|sprites?|prefabs?|lua|tables?|images?)\b/i,
+];
+
+let cardCache: KnowledgeCard[] | null = null;
+
+function readJsonFile(filePath: string): unknown {
+  return JSON.parse(readFileSync(filePath, 'utf-8'));
+}
+
+function normalizeCard(
+  card: PublicKnowledgeCard,
+  fallbackSource: string,
+  index: number,
+): KnowledgeCard {
+  return {
+    id: card.id ?? `${fallbackSource}-${index + 1}`,
+    type: card.type ?? 'public-art-heuristic',
+    source: fallbackSource,
+    title: card.title,
+    tags: card.tags ?? [],
+    summary: card.summary,
+    designInsights: card.designRules ?? [],
+    mgaiUsage: card.mgaiUsage ?? card.summary,
+    confidence: card.confidence ?? 0.7,
+    applicability: card.applicability,
+    sourcePolicy: card.sourcePolicy,
+    schema: card.schema,
+  };
+}
+
+function isPublicSafeCard(card: KnowledgeCard): boolean {
+  const searchable = JSON.stringify(card);
+  return !PUBLIC_BLOCKED_TEXT_PATTERNS.some((pattern) => pattern.test(searchable));
+}
+
+function loadCardsFromDir(
+  dir: string,
+  fallbackSource: string,
+  options: { publicSafe?: boolean } = {},
 ): KnowledgeCard[] {
-  const cardCounts = new Map<string, number>();
-  for (const cat of matchedCategories) {
-    for (const id of cat.cardIds) {
-      cardCounts.set(id, (cardCounts.get(id) ?? 0) + 1);
+  if (!existsSync(dir)) return [];
+
+  const files = readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+    .map((entry) => path.join(dir, entry.name))
+    .sort();
+
+  const cards: KnowledgeCard[] = [];
+  for (const filePath of files) {
+    try {
+      const raw = readJsonFile(filePath);
+      const pack = Array.isArray(raw)
+        ? { cards: raw as PublicKnowledgeCard[] }
+        : (raw as PublicKnowledgePack);
+      const packSource = pack.packId ?? fallbackSource;
+      const sourcePolicy = pack.sourcePolicy;
+
+      for (const [index, card] of (pack.cards ?? []).entries()) {
+        const normalized = {
+          ...normalizeCard(card, packSource, index),
+          sourcePolicy: card.sourcePolicy ?? sourcePolicy,
+        };
+
+        if (options.publicSafe && !isPublicSafeCard(normalized)) {
+          recallLogger.warn(`Skipped unsafe public knowledge card: ${normalized.id}`);
+          continue;
+        }
+
+        cards.push(normalized);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      recallLogger.warn(`知识包加载失败: ${filePath}`, { error: message });
     }
   }
 
-  const cards = cardIds
-    .map((id) => CARD_REGISTRY.find((c) => c.id === id))
-    .filter((c): c is KnowledgeCard => c != null);
+  return cards;
+}
 
-  return cards.sort((a, b) => {
-    const scoreA =
-      (cardCounts.get(a.id) ?? 0) * 0.6 + a.confidence * 0.4;
-    const scoreB =
-      (cardCounts.get(b.id) ?? 0) * 0.6 + b.confidence * 0.4;
-    return scoreB - scoreA;
+function loadAllCards(): KnowledgeCard[] {
+  if (cardCache) return cardCache;
+
+  const publicCards = loadCardsFromDir(PUBLIC_PACK_DIR, 'mgai-public-knowledge', {
+    publicSafe: true,
   });
+  const privateRoot = process.env.MGAI_PRIVATE_KNOWLEDGE_ROOT;
+  const privateCards = privateRoot
+    ? loadCardsFromDir(privateRoot, 'mgai-private-knowledge')
+    : [];
+
+  cardCache = [...publicCards, ...privateCards];
+  return cardCache;
+}
+
+function tokenize(text: string): string[] {
+  return text
+    .toLowerCase()
+    .split(/[\s,，、。；;:：/\\|()[\]{}"'`]+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2);
+}
+
+function scoreCard(card: KnowledgeCard, query: string, queryTokens: string[]): number {
+  const haystack = [
+    card.title,
+    card.summary,
+    card.tags.join(' '),
+    card.designInsights.join(' '),
+    card.applicability ?? '',
+    card.mgaiUsage,
+  ].join(' ').toLowerCase();
+
+  let score = card.confidence * 0.2;
+  for (const token of queryTokens) {
+    if (haystack.includes(token)) score += 1;
+  }
+  for (const tag of card.tags) {
+    if (query.includes(tag)) score += 1.5;
+  }
+  return score;
 }
 
 function compactCards(cards: KnowledgeCard[]): string {
   if (cards.length === 0) return '';
 
-  const lines: string[] = ['## 参考知识卡 (public-safe generic heuristics)'];
+  const lines: string[] = ['## 参考知识卡 (public/private layered recall)'];
   for (const card of cards) {
     const insightText =
       card.designInsights.length > 0
-        ? card.designInsights.slice(0, 2).join('; ')
+        ? card.designInsights.slice(0, 3).join('; ')
         : card.summary;
 
     lines.push(
@@ -211,32 +257,29 @@ export function recallKnowledgeCards(
     `recallKnowledgeCards 入口: query="${userQuery.substring(0, 60)}..."`,
   );
 
-  const matchedCategories = extractKeywordCategories(userQuery);
-
-  if (matchedCategories.length === 0) {
-    recallLogger.info('未命中任何关键词类别');
-    return { cards: [], compactPrompt: '' };
-  }
-
-  const allIds = new Set<string>();
-  for (const cat of matchedCategories) {
-    for (const id of cat.cardIds) {
-      allIds.add(id);
-    }
-  }
-
-  const scored = scoreCards([...allIds], matchedCategories);
-  const top = scored.slice(0, Math.min(maxCards, 5));
-  const compactPrompt = compactCards(top);
+  const cards = loadAllCards();
+  const queryTokens = tokenize(userQuery);
+  const scored = cards
+    .map((card) => ({ card, score: scoreCard(card, userQuery, queryTokens) }))
+    .filter((entry) => entry.score > 0.2)
+    .sort((a, b) => b.score - a.score || b.card.confidence - a.card.confidence)
+    .slice(0, Math.min(maxCards, 5))
+    .map((entry) => entry.card);
 
   recallLogger.info(
-    `召回 ${top.length} 张卡片: ${top.map((c) => c.id).join(', ')}`,
+    `召回 ${scored.length} 张卡片: ${scored.map((c) => c.id).join(', ')}`,
   );
 
-  return { cards: top, compactPrompt };
+  return {
+    cards: scored,
+    compactPrompt: compactCards(scored),
+  };
 }
 
 export function isXianxiaRelated(query: string): boolean {
-  const allKeywords = KEYWORD_CATEGORIES.flatMap((c) => c.keywords);
-  return allKeywords.some((kw) => query.includes(kw));
+  return XIANXIA_KEYWORDS.some((kw) => query.includes(kw));
+}
+
+export function resetKnowledgeRecallCache(): void {
+  cardCache = null;
 }

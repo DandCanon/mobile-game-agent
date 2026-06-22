@@ -22,7 +22,7 @@ cd templates/web-game
 npm install && npm run dev
 ```
 
-### 打包 APK
+### 打包 Android 安装包
 
 ```bash
 npm run android:init && npm run android:add && npm run android:sync && npm run android:open

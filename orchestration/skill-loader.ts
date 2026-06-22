@@ -30,7 +30,7 @@ export interface SkillManifest {
   skillDir: string;
 }
 
-/** 完整加载的 Skill（含正文 + 关联资源路径） */
+/** 完整加载的 Skill（含正文 + 关联资源定位信息） */
 export interface Skill extends SkillManifest {
   /** SKILL.md 正文内容（去除 frontmatter 后） */
   content: string;

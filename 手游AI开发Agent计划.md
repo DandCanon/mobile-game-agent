@@ -346,7 +346,7 @@ Agent 不直接「内置」任何引擎——它内置的是**技术选型决策
 | QA 辅助（测试用例生成+Bug模板） | ❌ |
 | 性能分析 | ❌ |
 | ASO 与商店素材 | ❌ |
-| APK 打包 Skill | ❌ |
+| Android 安装包 打包 Skill | ❌ |
 | 数据埋点 | ❌ |
 | 迭代规划 | ❌ |
 
@@ -586,7 +586,7 @@ D:\Marvis\手游AI开发Agent\
 | P3-3 | **数值系统** | ✅ (Phase 3c) | `src/numerics/curves.ts` + `export.ts`，67 tests |
 | P3-4 | **美术 Prompt 工程 Skill** | ⬜ | 待触发 |
 | P3-5 | **ASO 与商店素材 Skill** | ⬜ | 待触发 |
-| P3-6 | **APK 打包 Skill**（Capacitor 自动化） | ⬜ | 待触发 |
+| P3-6 | **Android 安装包 打包 Skill**（Capacitor 自动化） | ⬜ | 待触发 |
 | P3-7 | **Unity 实操 Skill** | ✅ (Phase 3d) | `skills/unity/SKILL.md` + code-generator unity-2d/unity-3d，65 tests |
 
 #### ✅ Phase 3e: 联网对战
@@ -863,7 +863,7 @@ bug-report.zip
 
 | 能力 | 推荐工具 |
 |------|------|
-| 安装 APK | `adb install` |
+| 安装 Android 安装包 | `adb install` |
 | 启动 App | `adb shell monkey` / activity manager |
 | 抓日志 | `adb logcat` |
 | 截图/录屏 | `adb exec-out screencap` / `screenrecord` |

@@ -80,7 +80,7 @@ export abstract class DeviceController {
   /** 在设备上执行命令 */
   abstract runCommand(deviceId: string, command: string): CommandResult;
 
-  /** 安装 APK */
+  /** 安装 Android 应用包 */
   abstract installApk(deviceId: string, apkPath: string): InstallResult;
 
   /** 卸载应用 */

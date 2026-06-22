@@ -30,7 +30,6 @@
     "skills/",
     "templates/",
     "tests/",
-    "logs/",
     "INSTALL.md",
     "dashboard.html",
     "tsconfig.json",
