@@ -1,0 +1,33 @@
+{
+  "id": "error-mcp-sqlite-esm-require",
+  "title": "ESM 项目中裸 require 加载 CJS 原生模块导致误判",
+  "symptoms": [
+    "mgai_get_status 返回 memoryStatus: degraded",
+    "sqliteAvailable: false",
+    "node -e require 测试通过但 mgai 运行时失败",
+    "日志中可能包含 ReferenceError: require is not defined"
+  ],
+  "rootCause": "项目 package.json 设置 \"type\": \"module\"，tsx 以 ESM 模式运行。ESM 作用域内 require 不是全局可用，裸调用 require() 抛出 ReferenceError，被 catch 后误判为 better-sqlite3 原生模块加载失败。",
+  "fix": "使用 Node.js 标准库 module 的 createRequire(import.meta.url) 创建项目级 require，封装在 orchestration/native-loader.ts 中统一管理所有 CJS 原生模块加载。受影响的调用点改为通过 native-loader 的导出函数加载。",
+  "prevention": [
+    "所有需要加载 CJS 模块的 ESM 文件，必须使用 createRequire 或导入 native-loader 提供的封装",
+    "禁止在 ESM 文件中直接使用 require() 或 require.resolve()",
+    "新增 CJS/native 依赖时，优先通过 native-loader.ts 添加加载函数",
+    "CI/测试中应包含 ESM 运行时 smoke test：npx tsx scripts/smoke-sqlite-runtime.ts"
+  ],
+  "tags": ["mcp", "sqlite", "esm", "require", "better-sqlite3", "native-module", "typescript", "tsx"],
+  "validationCommands": [
+    "npx tsx scripts/smoke-sqlite-runtime.ts",
+    "npx tsc --noEmit",
+    "npx vitest run"
+  ],
+  "relatedFiles": [
+    "orchestration/native-loader.ts",
+    "orchestration/persistence.ts",
+    "orchestration/binary-guard.ts",
+    "mcp/server.ts",
+    "scripts/smoke-sqlite-runtime.ts"
+  ],
+  "severity": "high",
+  "dateFixed": "2026-06-23"
+}

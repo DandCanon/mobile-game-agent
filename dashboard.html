@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>手游AI开发Agent · 管线仪表板</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --surface-0: #141416;
+    --surface-1: #1b1b1e;
+    --surface-2: #232327;
+    --surface-3: #2b2b30;
+    --text-primary: #e4e4e7;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+    --border-subtle: #2b2b30;
+    --accent: #d4a853;
+    --accent-dim: #8b6f32;
+    --success: #4ade80;
+    --warn: #fbbf24;
+    --error: #f87171;
+    --info: #60a5fa;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--surface-0);
+    color: var(--text-primary);
+    margin: 0;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+  .mono { font-family: 'Share Tech Mono', 'Consolas', monospace; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface-1); }
+  ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 3px; }
+
+  /* Status indicators */
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .status-dot.planned { background: var(--text-muted); }
+  .status-dot.executing { background: var(--info); animation: pulse-dot 1s ease-in-out infinite; }
+  .status-dot.completed { background: var(--success); }
+  .status-dot.failed { background: var(--error); }
+  .status-dot.skipped { background: var(--warn); }
+  @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* Step card */
+  .step-card {
+    background: var(--surface-1);
+    border-left: 2px solid var(--surface-3);
+    transition: border-color 200ms ease, background 200ms ease;
+    cursor: pointer;
+  }
+  .step-card:hover { background: var(--surface-2); }
+  .step-card.active { border-left-color: var(--accent); background: var(--surface-2); }
+  .step-card.completed { border-left-color: var(--success); }
+  .step-card.failed { border-left-color: var(--error); }
+  .step-card.executing { border-left-color: var(--info); }
+
+  /* Reflection check */
+  .check-item { background: var(--surface-2); border-radius: 4px; padding: 8px 12px; }
+  .check-item.pass { border-left: 3px solid var(--success); }
+  .check-item.fail { border-left: 3px solid var(--error); }
+  .check-item.pending { border-left: 3px solid var(--warn); }
+
+  /* Progress bar */
+  .progress-track { background: var(--surface-2); height: 4px; border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); transition: width 400ms cubic-bezier(0.4, 0, 0.2, 1); border-radius: 2px; }
+
+  /* Button */
+  .btn-primary {
+    background: var(--accent);
+    color: var(--surface-0);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 150ms ease, transform 100ms ease;
+    letter-spacing: 0.02em;
+  }
+  .btn-primary:hover { background: #c99e48; }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { background: var(--surface-3); color: var(--text-muted); cursor: not-allowed; }
+
+  /* Input */
+  .input-field {
+    background: var(--surface-2);
+    border: 1px solid var(--surface-3);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    width: 100%;
+    transition: border-color 150ms ease;
+  }
+  .input-field:focus { outline: none; border-color: var(--accent); }
+  .input-field::placeholder { color: var(--text-muted); }
+
+  /* Select */
+  .select-field {
+    background: var(--surface-2);
+    border: 1px solid var(--surface-3);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    width: 100%;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23a1a1aa' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+  }
+  .select-field:focus { outline: none; border-color: var(--accent); }
+
+  /* Panel */
+  .panel { background: var(--surface-1); border: 1px solid var(--border-subtle); }
+</style>
+</head>
+<body class="flex flex-col h-screen">
+
+<!-- ========== TOP BAR ========== -->
+<header class="flex items-center justify-between px-6 py-3 border-b" style="background:var(--surface-1);border-color:var(--border-subtle);">
+  <div class="flex items-center gap-3">
+    <div class="w-3 h-3 rounded-full" style="background:var(--accent);box-shadow:0 0 8px var(--accent-dim);"></div>
+    <h1 class="mono text-lg font-normal tracking-wide" style="color:var(--text-primary);">
+      手游AI开发Agent <span style="color:var(--text-muted);">· 管线仪表板</span>
+    </h1>
+  </div>
+  <div class="mono text-xs" style="color:var(--text-muted);">
+    D:\Marvis\手游AI开发Agent\
+    <span id="phase-indicator" class="ml-2 px-2 py-0.5 rounded" style="background:var(--surface-2);color:var(--accent);">立项</span>
+  </div>
+</header>
+
+<!-- ========== MAIN GRID ========== -->
+<main class="flex-1 grid gap-0 overflow-hidden" style="grid-template-columns:280px 1fr 320px;">
+
+  <!-- LEFT PANEL -->
+  <aside class="panel flex flex-col overflow-hidden">
+    <div class="p-4 space-y-3 flex-shrink-0">
+      <label class="block text-xs font-semibold tracking-wider uppercase" style="color:var(--text-muted);">游戏类型</label>
+      <select id="game-type" class="select-field">
+        <option value="放置">放置 (Idle)</option>
+        <option value="卡牌">卡牌 (Card)</option>
+        <option value="休闲">休闲 (Casual)</option>
+        <option value="肉鸽">肉鸽 (Roguelike)</option>
+        <option value="文字冒险">文字冒险 (VN)</option>
+        <option value="动作">动作 (Action)</option>
+      </select>
+
+      <label class="block text-xs font-semibold tracking-wider uppercase" style="color:var(--text-muted);">项目描述</label>
+      <textarea id="user-input" class="input-field" rows="3" placeholder="例如：开发一款修仙放置手游，挂机自动修炼，突破境界...">开发一款修仙放置手游，挂机自动修炼，突破境界</textarea>
+
+      <button id="btn-generate" class="btn-primary w-full">
+        生成执行计划
+      </button>
+
+      <div id="tech-result" class="hidden mt-2 p-3 rounded text-xs" style="background:var(--surface-2);">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="status-dot completed"></span>
+          <span class="font-semibold" id="tech-engine" style="color:var(--accent);"></span>
+        </div>
+        <p id="tech-reason" class="leading-relaxed" style="color:var(--text-secondary);"></p>
+      </div>
+    </div>
+
+    <!-- Memory list -->
+    <div class="flex-1 overflow-y-auto px-4 pb-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-semibold tracking-wider uppercase" style="color:var(--text-muted);">记忆片段</span>
+        <span id="memory-count" class="mono text-xs" style="color:var(--text-muted);">0</span>
+      </div>
+      <div id="memory-list" class="space-y-1"></div>
+    </div>
+  </aside>
+
+  <!-- CENTER PANEL -->
+  <section class="overflow-y-auto px-4 py-4 space-y-3" id="steps-container">
+    <div id="empty-state" class="flex flex-col items-center justify-center h-full" style="color:var(--text-muted);">
+      <div class="mono text-6xl mb-4 opacity-20">◈</div>
+      <p class="text-sm">选择游戏类型并输入需求</p>
+      <p class="text-xs mt-1 opacity-60">点击「生成执行计划」开始</p>
+    </div>
+  </section>
+
+  <!-- RIGHT PANEL -->
+  <aside class="panel flex flex-col overflow-hidden">
+    <div class="p-4 flex-shrink-0 border-b" style="border-color:var(--border-subtle);">
+      <span class="text-xs font-semibold tracking-wider uppercase" style="color:var(--text-muted);">Reflector 校验</span>
+    </div>
+    <div id="reflection-panel" class="flex-1 overflow-y-auto p-4">
+      <div class="flex flex-col items-center justify-center h-full" style="color:var(--text-muted);">
+        <p class="text-xs">选择左侧步骤查看反思结果</p>
+      </div>
+    </div>
+
+    <!-- Summary at bottom of right panel -->
+    <div id="reflection-summary" class="hidden p-4 border-t" style="border-color:var(--border-subtle);background:var(--surface-2);"></div>
+  </aside>
+
+</main>
+
+<!-- ========== BOTTOM BAR ========== -->
+<footer class="flex items-center justify-between px-6 py-2 border-t" style="background:var(--surface-1);border-color:var(--border-subtle);">
+  <div class="flex items-center gap-3 flex-1 mr-4">
+    <span class="text-xs" style="color:var(--text-muted);">进度</span>
+    <div class="progress-track flex-1 max-w-xs">
+      <div id="global-progress" class="progress-fill" style="width:0%;"></div>
+    </div>
+    <span id="progress-text" class="mono text-xs" style="color:var(--text-secondary);">0/0</span>
+  </div>
+  <div class="flex items-center gap-4">
+    <span class="text-xs" style="color:var(--text-muted);">
+      步骤 <span id="stat-steps" class="mono" style="color:var(--text-secondary);">0</span>
+    </span>
+    <span class="text-xs" style="color:var(--text-muted);">
+      产出物 <span id="stat-artifacts" class="mono" style="color:var(--text-secondary);">0</span>
+    </span>
+    <span class="text-xs" style="color:var(--text-muted);">
+      记忆 <span id="stat-memories" class="mono" style="color:var(--text-secondary);">0</span>
+    </span>
+    <span id="stat-status" class="mono text-xs px-2 py-0.5 rounded" style="background:var(--surface-2);">idle</span>
+  </div>
+</footer>
+
+<!-- ========== SCRIPTS ========== -->
+<script>
+/* ===================== STATE ===================== */
+const state = {
+  plan: null,
+  steps: [],
+  activeStepId: null,
+  memories: []
+};
+
+/* ===================== MOCK DATA ===================== */
+const MOCK_PLAN = {
+  planId: 'plan-1718163400000',
+  overallGoal: '开发一款修仙放置手游，挂机自动修炼，突破境界',
+  techRecommendation: {
+    engine: 'react-vite-tailwind',
+    reason: '基于你的项目特征——放置类手游、1人团队——首选推荐 React + Vite + Tailwind CSS（领先第二名 18 分）。核心优势：轻量、热更新、前端友好、快速迭代。',
+    alternatives: ['godot', 'unity'],
+    pros: ['轻量', '热更新', '前端友好', '快速迭代'],
+    cons: ['性能受 WebView 限制，不适合重度 3D', '原生功能需通过插件桥接']
+  },
+  estimatedDuration: 600,
+  risks: []
+};
+
+const MOCK_STEPS = [
+  {
+    id: 'step-01', phase: '立项', title: '项目初始化',
+    description: '初始化项目目录结构，安装框架依赖',
+    status: 'completed',
+    directoryStructure: ['src/game/', 'src/game/components/', 'src/game/systems/'],
+    interfaceContracts: [],
+    dataModels: [],
+    acceptanceCriteria: [
+      { id: 'init-1', description: 'package.json 存在且依赖安装成功', verifyBy: 'file-exists', verifyParam: 'package.json' },
+      { id: 'init-2', description: 'TypeScript 编译无错误', verifyBy: 'type-check', verifyParam: 'npx tsc --noEmit' }
+    ],
+    estimatedTools: ['write_file', 'shell_executor'],
+    maxCodeLines: 50,
+    result: {
+      success: true,
+      durationMs: 2300,
+      artifacts: [{ path: 'D:\\project\\src\\game\\', type: 'directory', description: '游戏源码目录' }],
+      toolCalls: [
+        { toolName: 'write_file', success: true, durationMs: 400 },
+        { toolName: 'shell_executor', success: true, durationMs: 1800 }
+      ],
+      errors: []
+    }
+  },
+  {
+    id: 'step-02', phase: '立项', title: '游戏数据模型定义',
+    description: '定义游戏核心数据类型：GameState、资源、升级项、成就',
+    status: 'completed',
+    directoryStructure: ['src/game/types.ts'],
+    interfaceContracts: [],
+    dataModels: [
+      { name: 'GameState', fields: [
+        { name: 'gold', type: 'number', nullable: false, description: '金币（主货币）' },
+        { name: 'gems', type: 'number', nullable: false, description: '钻石（高级货币）' },
+        { name: 'totalClicks', type: 'number', nullable: false, description: '总点击数' }
+      ], description: '玩家全局状态' },
+      { name: 'Upgrade', fields: [
+        { name: 'id', type: 'string', nullable: false, description: '升级项唯一 ID' },
+        { name: 'level', type: 'number', nullable: false, description: '当前等级' },
+        { name: 'baseCost', type: 'number', nullable: false, description: '基础成本' }
+      ], description: '升级项定义' }
+    ],
+    acceptanceCriteria: [
+      { id: 'types-1', description: 'types.ts 文件存在', verifyBy: 'file-exists', verifyParam: 'src/game/types.ts' },
+      { id: 'types-2', description: 'GameState 接口含 gold/gems/totalClicks 字段', verifyBy: 'type-check', verifyParam: 'type check passes' }
+    ],
+    estimatedTools: ['write_file'],
+    maxCodeLines: 80,
+    result: {
+      success: true,
+      durationMs: 1200,
+      artifacts: [{ path: 'D:\\project\\src\\game\\types.ts', type: 'code', description: '类型定义文件' }],
+      toolCalls: [{ toolName: 'write_file', success: true, durationMs: 1100 }],
+      errors: []
+    }
+  },
+  {
+    id: 'step-03', phase: '立项', title: '游戏引擎核心实现',
+    description: '实现 GameEngine 纯逻辑层：点击收益、自动生产、离线计算、升级购买、成就检测',
+    status: 'executing',
+    directoryStructure: ['src/game/GameEngine.ts'],
+    interfaceContracts: [
+      { name: 'performClick', signature: '(state: GameState) => GameState', params: [{ name: 'state', type: 'GameState', required: true, description: '当前游戏状态' }], returns: 'GameState', purpose: '执行一次点击，返回新状态' },
+      { name: 'getIncomePerSec', signature: '(state: GameState) => number', params: [{ name: 'state', type: 'GameState', required: true, description: '当前游戏状态' }], returns: 'number', purpose: '计算每秒自动收益' },
+      { name: 'buyUpgrade', signature: '(state: GameState, id: string) => { state: GameState; success: boolean }', params: [
+        { name: 'state', type: 'GameState', required: true, description: '当前游戏状态' },
+        { name: 'id', type: 'string', required: true, description: '升级项 ID' }
+      ], returns: '{ state, success }', purpose: '购买升级' }
+    ],
+    dataModels: [],
+    acceptanceCriteria: [
+      { id: 'engine-1', description: 'performClick 正确增加金币和点击数', verifyBy: 'unit-test', verifyParam: 'test: performClick' },
+      { id: 'engine-2', description: 'buyUpgrade 金币不足时返回 success=false', verifyBy: 'unit-test', verifyParam: 'test: buyUpgrade insufficient' },
+      { id: 'engine-3', description: '离线收益计算正确', verifyBy: 'unit-test', verifyParam: 'test: calculateTimeAdvance' }
+    ],
+    estimatedTools: ['write_file'],
+    maxCodeLines: 200,
+    result: null
+  },
+  {
+    id: 'step-04', phase: '原型', title: '主界面组件开发',
+    description: '实现 App.tsx 主框架和资源显示/点击区域/升级面板',
+    status: 'planned',
+    directoryStructure: ['src/App.tsx', 'src/game/components/'],
+    interfaceContracts: [
+      { name: 'ResourceDisplay', signature: '(props: { state: GameState }) => JSX.Element', params: [{ name: 'state', type: 'GameState', required: true, description: '游戏状态' }], returns: 'JSX.Element', purpose: '显示金币/钻石/每秒收益' },
+      { name: 'ClickArea', signature: '(props: { state: GameState; onClick: () => void }) => JSX.Element', params: [
+        { name: 'state', type: 'GameState', required: true, description: '游戏状态' },
+        { name: 'onClick', type: '() => void', required: true, description: '点击回调' }
+      ], returns: 'JSX.Element', purpose: '点击区域' }
+    ],
+    dataModels: [],
+    acceptanceCriteria: [
+      { id: 'ui-1', description: '页面渲染无白屏/报错', verifyBy: 'manual', verifyParam: '手动打开 dev server' },
+      { id: 'ui-2', description: '点击区域有视觉反馈', verifyBy: 'manual', verifyParam: '点击观察浮动数字' },
+      { id: 'ui-3', description: '升级面板显示所有升级项', verifyBy: 'manual', verifyParam: '观察面板内容' }
+    ],
+    estimatedTools: ['write_file'],
+    maxCodeLines: 200,
+    result: null
+  },
+  {
+    id: 'step-05', phase: '原型', title: '离线收益与存档',
+    description: '实现离线收益计算弹窗、localStorage 存档/读档、自动保存',
+    status: 'planned',
+    directoryStructure: [],
+    interfaceContracts: [
+      { name: 'saveGame', signature: '(state: GameState) => void', params: [{ name: 'state', type: 'GameState', required: true, description: '游戏状态' }], returns: 'void', purpose: '保存游戏到 localStorage' },
+      { name: 'loadGame', signature: '() => GameState | null', params: [], returns: 'GameState | null', purpose: '从 localStorage 读取存档' }
+    ],
+    dataModels: [],
+    acceptanceCriteria: [
+      { id: 'save-1', description: '刷新页面后金币不丢失', verifyBy: 'manual', verifyParam: '修改金币后刷新' },
+      { id: 'save-2', description: '离线收益弹窗显示正确', verifyBy: 'manual', verifyParam: '修改系统时间后刷新' }
+    ],
+    estimatedTools: ['write_file'],
+    maxCodeLines: 100,
+    result: null
+  }
+];
+
+const MOCK_REFLECTIONS = {
+  'step-01': {
+    passed: true,
+    checks: [
+      { type: 'file-exists', criterionId: 'init-1', passed: true, detail: 'package.json 已生成' },
+      { type: 'code-quality', criterionId: 'init-2', passed: true, detail: 'TypeScript 编译通过，零错误' }
+    ],
+    corrections: [],
+    needsRetry: false
+  },
+  'step-02': {
+    passed: true,
+    checks: [
+      { type: 'file-exists', criterionId: 'types-1', passed: true, detail: 'src/game/types.ts 已生成' },
+      { type: 'code-quality', criterionId: 'types-2', passed: true, detail: '类型检查待外部执行: type check passes' }
+    ],
+    corrections: [],
+    needsRetry: false
+  },
+  'step-03': {
+    passed: false,
+    checks: [
+      { type: 'test-pass', criterionId: 'engine-1', passed: false, detail: '测试未运行: test: performClick' },
+      { type: 'test-pass', criterionId: 'engine-2', passed: false, detail: '测试未运行: test: buyUpgrade insufficient' },
+      { type: 'test-pass', criterionId: 'engine-3', passed: false, detail: '测试未运行: test: calculateTimeAdvance' }
+    ],
+    corrections: [
+      { description: '执行测试: test: performClick', action: 'run-command', params: { command: 'npx vitest performClick' } },
+      { description: '执行测试: test: buyUpgrade insufficient', action: 'run-command', params: { command: 'npx vitest buyUpgrade' } }
+    ],
+    needsRetry: true
+  }
+};
+
+const MOCK_MEMORIES = [
+  { id: 'mem-1', title: '修仙体系设计', content: '炼气→筑基→金丹→元婴→化神→渡劫→大乘', tags: ['设计', '修仙'], importance: 8, createdAt: Date.now() - 3600000 },
+  { id: 'mem-2', title: 'Web技术栈选型理由', content: '放置类+热更新需求+1人团队,React是最佳选择', tags: ['技术选型'], importance: 9, createdAt: Date.now() - 7200000 },
+  { id: 'mem-3', title: '离线收益公式', content: 'offlineGold = incomePerSec * min(elapsed, 8*3600) * 0.5', tags: ['数值', '公式'], importance: 7, createdAt: Date.now() - 10800000 }
+];
+
+/* ===================== RENDER ===================== */
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+function statusLabel(s) {
+  const map = { planned: '待执行', executing: '执行中', completed: '已完成', failed: '失败', skipped: '跳过' };
+  return map[s] || s;
+}
+
+function statusColor(s) {
+  const map = { planned: 'var(--text-muted)', executing: 'var(--info)', completed: 'var(--success)', failed: 'var(--error)', skipped: 'var(--warn)' };
+  return map[s] || 'var(--text-muted)';
+}
+
+function timeAgo(ts) {
+  const s = (Date.now() - ts) / 1000;
+  if (s < 60) return '刚刚';
+  if (s < 3600) return Math.floor(s/60) + '分钟前';
+  if (s < 86400) return Math.floor(s/3600) + '小时前';
+  return Math.floor(s/86400) + '天前';
+}
+
+function renderSteps() {
+  const container = $('#steps-container');
+  const empty = $('#empty-state');
+
+  if (!state.plan || state.steps.length === 0) {
+    empty.style.display = 'flex';
+    container.querySelectorAll('.step-card').forEach(el => el.remove());
+    return;
+  }
+
+  empty.style.display = 'none';
+  container.querySelectorAll('.step-card').forEach(el => el.remove());
+
+  state.steps.forEach((step) => {
+    const ref = MOCK_REFLECTIONS[step.id];
+    const card = document.createElement('div');
+    card.className = `step-card p-4 rounded ${step.status} ${state.activeStepId === step.id ? 'active' : ''}`;
+    card.setAttribute('data-step-id', step.id);
+
+    card.innerHTML = `
+      <div class="flex items-start justify-between mb-3">
+        <div class="flex items-center gap-3">
+          <span class="status-dot ${step.status}"></span>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs px-2 py-0.5 rounded mono" style="background:var(--surface-2);color:var(--text-muted);">${step.phase}</span>
+              <span class="text-sm font-semibold" style="color:var(--text-primary);">${step.title}</span>
+            </div>
+            <p class="text-xs mt-1" style="color:var(--text-secondary);">${step.description}</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs" style="color:${statusColor(step.status)};">${statusLabel(step.status)}</span>
+          ${step.result ? `<span class="mono text-xs" style="color:var(--text-muted);">${(step.result.durationMs/1000).toFixed(1)}s</span>` : ''}
+          ${ref && !ref.passed ? `<span class="text-xs px-2 py-0.5 rounded" style="background:var(--error);color:var(--surface-0);">${ref.checks.filter(c=>!c.passed).length} 项未通过</span>` : ''}
+        </div>
+      </div>
+      <div class="step-detail hidden space-y-3 pt-3 border-t" style="border-color:var(--border-subtle);">
+        ${step.directoryStructure.length ? `
+        <div>
+          <span class="text-xs font-semibold" style="color:var(--text-muted);">目录结构</span>
+          <div class="mt-1 space-y-0.5">
+            ${step.directoryStructure.map(d => `<div class="mono text-xs" style="color:var(--text-secondary);">▸ ${d}</div>`).join('')}
+          </div>
+        </div>` : ''}
+        ${step.interfaceContracts.length ? `
+        <div>
+          <span class="text-xs font-semibold" style="color:var(--text-muted);">接口契约 (${step.interfaceContracts.length})</span>
+          ${step.interfaceContracts.map(ic => `
+          <div class="mt-1 p-2 rounded text-xs" style="background:var(--surface-2);color:var(--text-secondary);">
+            <span class="mono" style="color:var(--accent);">${ic.name}</span>
+            <span class="mono mx-1">${ic.signature}</span>
+            &rarr; ${ic.returns}
+          </div>`).join('')}
+        </div>` : ''}
+        ${step.dataModels.length ? `
+        <div>
+          <span class="text-xs font-semibold" style="color:var(--text-muted);">数据模型 (${step.dataModels.length})</span>
+          ${step.dataModels.map(dm => `
+          <div class="mt-1 p-2 rounded text-xs" style="background:var(--surface-2);">
+            <span class="font-semibold" style="color:var(--accent);">${dm.name}</span>
+            <span class="ml-2" style="color:var(--text-muted);">${dm.description}</span>
+            <div class="mt-1 space-y-0.5">
+              ${dm.fields.map(f => `<div class="mono" style="color:var(--text-secondary);">  ${f.name}: <span style="color:var(--info);">${f.type}</span>${f.nullable?'?':''}</div>`).join('')}
+            </div>
+          </div>`).join('')}
+        </div>` : ''}
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold" style="color:var(--text-muted);">预计工具</span>
+          ${step.estimatedTools.map(t => `<span class="text-xs mono px-2 py-0.5 rounded" style="background:var(--surface-2);color:var(--text-secondary);">${t}</span>`).join('')}
+          <span class="text-xs ml-2" style="color:var(--text-muted);">≤${step.maxCodeLines} 行</span>
+        </div>
+      </div>
+    `;
+
+    card.addEventListener('click', (e) => {
+      state.activeStepId = step.id;
+      renderSteps();
+      renderReflection(step.id);
+    });
+
+    container.appendChild(card);
+  });
+
+  // Expand active step
+  if (state.activeStepId) {
+    const activeCard = container.querySelector(`[data-step-id="${state.activeStepId}"]`);
+    if (activeCard) {
+      const detail = activeCard.querySelector('.step-detail');
+      if (detail) detail.classList.remove('hidden');
+    }
+  }
+}
+
+function renderReflection(stepId) {
+  const panel = $('#reflection-panel');
+  const summary = $('#reflection-summary');
+  const ref = MOCK_REFLECTIONS[stepId];
+
+  if (!ref) {
+    panel.innerHTML = '<div class="flex flex-col items-center justify-center h-full" style="color:var(--text-muted);"><p class="text-xs">该步骤暂无反思数据</p></div>';
+    summary.classList.add('hidden');
+    return;
+  }
+
+  panel.innerHTML = `
+    <div class="space-y-3">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="status-dot ${ref.passed ? 'completed' : 'failed'}"></span>
+        <span class="text-sm font-semibold" style="color:${ref.passed ? 'var(--success)' : 'var(--error)'};">
+          ${ref.passed ? '校验通过' : '校验未通过'}
+        </span>
+      </div>
+      ${ref.checks.map(c => `
+        <div class="check-item ${c.passed ? 'pass' : 'fail'}">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold" style="color:var(--text-primary);">${c.type}</span>
+            <span class="mono text-xs" style="color:${c.passed ? 'var(--success)' : 'var(--error)'};">${c.passed ? 'PASS' : 'FAIL'}</span>
+          </div>
+          <p class="text-xs mt-0.5" style="color:var(--text-secondary);">${c.detail}</p>
+        </div>
+      `).join('')}
+      ${ref.corrections.length ? `
+        <div class="mt-4">
+          <span class="text-xs font-semibold tracking-wider uppercase" style="color:var(--warn);">修正建议 (${ref.corrections.length})</span>
+          ${ref.corrections.map(c => `
+            <div class="mt-2 p-2 rounded text-xs" style="background:var(--surface-2);">
+              <span class="text-xs px-1.5 py-0.5 rounded mono" style="background:var(--surface-3);color:var(--text-muted);">${c.action}</span>
+              <span class="ml-2" style="color:var(--text-secondary);">${c.description}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `;
+
+  summary.classList.remove('hidden');
+  summary.innerHTML = `
+    <div class="flex items-center justify-between">
+      <span class="text-xs" style="color:var(--text-muted);">反思摘要</span>
+      <span class="mono text-xs" style="color:var(--text-secondary);">${ref.checks.filter(c=>c.passed).length}/${ref.checks.length} 通过</span>
+    </div>
+  `;
+}
+
+function renderMemories() {
+  const list = $('#memory-list');
+  const count = $('#memory-count');
+  count.textContent = state.memories.length;
+
+  list.innerHTML = state.memories.map(m => `
+    <div class="p-2 rounded text-xs cursor-pointer transition-colors duration-150" style="background:var(--surface-2);"
+         onmouseenter="this.style.background='var(--surface-3)'" onmouseleave="this.style.background='var(--surface-2)'">
+      <div class="flex items-center justify-between">
+        <span class="font-semibold" style="color:var(--text-primary);">${m.title}</span>
+        <span class="mono" style="color:var(--text-muted);">${m.importance}/10</span>
+      </div>
+      <p class="mt-0.5 leading-relaxed" style="color:var(--text-secondary);">${m.content}</p>
+      <div class="flex items-center justify-between mt-1">
+        <div class="flex gap-1">
+          ${m.tags.map(t => `<span class="text-xs px-1.5 py-0.5 rounded mono" style="background:var(--surface-3);color:var(--text-muted);">${t}</span>`).join('')}
+        </div>
+        <span style="color:var(--text-muted);">${timeAgo(m.createdAt)}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateStats() {
+  const completed = state.steps.filter(s => s.status === 'completed').length;
+  const total = state.steps.length;
+  const pct = total > 0 ? Math.round(completed / total * 100) : 0;
+
+  $('#global-progress').style.width = pct + '%';
+  $('#progress-text').textContent = `${completed}/${total}`;
+  $('#stat-steps').textContent = total;
+  $('#stat-artifacts').textContent = state.steps.filter(s => s.result).length;
+  $('#stat-memories').textContent = state.memories.length;
+
+  if (completed === total && total > 0) {
+    $('#stat-status').textContent = 'complete';
+    $('#stat-status').style.color = 'var(--success)';
+  } else if (state.plan) {
+    $('#stat-status').textContent = 'running';
+    $('#stat-status').style.color = 'var(--info)';
+  }
+}
+
+function renderAll() {
+  renderSteps();
+  renderMemories();
+  updateStats();
+}
+
+/* ===================== ACTIONS ===================== */
+$('#btn-generate').addEventListener('click', () => {
+  const gameType = $('#game-type').value;
+  const userInput = $('#user-input').value.trim();
+
+  if (!userInput) return;
+
+  // Simulate plan generation
+  state.plan = { ...MOCK_PLAN, overallGoal: userInput };
+  state.steps = MOCK_STEPS.map(s => ({ ...s }));
+  state.activeStepId = state.steps[0].id;
+
+  // Show tech result
+  const techDiv = $('#tech-result');
+  techDiv.classList.remove('hidden');
+  $('#tech-engine').textContent = state.plan.techRecommendation.engine;
+  $('#tech-reason').textContent = state.plan.techRecommendation.reason;
+  $('#phase-indicator').textContent = state.steps[0].phase;
+
+  // Load memories
+  state.memories = [...MOCK_MEMORIES];
+
+  renderAll();
+  renderReflection(state.steps[0].id);
+});
+
+/* ===================== INIT ===================== */
+renderAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "declaration": false,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "baseUrl": ".",
+    "paths": {
+      "@protocol/*": ["protocol/*"],
+      "@orchestration/*": ["orchestration/*"],
+      "@adapters/*": ["adapters/*"]
+    }
+  },
+  "include": ["protocol/**/*.ts", "orchestration/**/*.ts", "adapters/**/*.ts", "cli/**/*.ts", "mcp/**/*.ts", "src/**/*.ts", "tests/**/*.ts"]
+}

@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Runtime data
+logs/
+.memory/
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+*.db
+
+# Temporary and generated output
+temp/
+tmp/
+analysis/
+temp_*.txt
+temp_*.json
+e2e-card/
+e2e-gen/
+e2e-output/
+e2e-test/
+test-project/
+templates/**/dist/
+
+# Local private APK / competitor-reference analysis (do not publish)
+*.apk
+knowledge/game-reference/
+knowledge/ui-motion/
+knowledge/game-reference/xian_M161573*.json
+knowledge/game-reference/private/
+mgai_analysis/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/

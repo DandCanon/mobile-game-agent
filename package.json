@@ -1,0 +1,73 @@
+{
+  "name": "mobile-game-ai-agent",
+  "version": "0.8.0",
+  "description": "手游AI开发Agent — 从需求到可玩游戏的全自动管线",
+  "type": "module",
+  "main": "./orchestration/gateway.js",
+  "bin": {
+    "mgai-mcp": "./mcp/run.ts"
+  },
+  "exports": {
+    ".": "./orchestration/gateway.js",
+    "./orchestration/*": "./orchestration/*.js",
+    "./adapters/*": "./adapters/*.js",
+    "./protocol/*": "./protocol/*.js",
+    "./orchestration/planner": "./orchestration/planner.js",
+    "./orchestration/executor": "./orchestration/executor.js",
+    "./orchestration/reflector": "./orchestration/reflector.js",
+    "./orchestration/tech-selector": "./orchestration/tech-selector.js",
+    "./orchestration/memory": "./orchestration/memory.js",
+    "./orchestration/gateway": "./orchestration/gateway.js",
+    "./adapters/marvis-adapter": "./adapters/marvis-adapter.js"
+  },
+  "files": [
+    "protocol/",
+    "orchestration/",
+    "adapters/",
+    "cli/",
+    "mcp/",
+    "public/",
+    "skills/",
+    "templates/",
+    "tests/",
+    "logs/",
+    "INSTALL.md",
+    "dashboard.html",
+    "tsconfig.json",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "check": "tsc --noEmit && vitest run",
+    "self-check": "npx tsx cli/mgai.ts test --self-check",
+    "cli": "npx tsx cli/mgai.ts",
+    "dashboard": "npx tsx cli/mgai.ts dashboard"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.9.3",
+    "tsx": "^4.22.4",
+    "typescript": "^5.4.0",
+    "vitest": "^4.1.8"
+  },
+  "engines": {
+    "node": ">=20 <27"
+  },
+  "keywords": [
+    "game-development",
+    "mobile-game",
+    "ai-agent",
+    "idle-game",
+    "card-game"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@jridgewell/sourcemap-codec": "^1.5.5",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "better-sqlite3": "^12.11.1"
+  }
+}

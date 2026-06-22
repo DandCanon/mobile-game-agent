@@ -1,0 +1,82 @@
+{
+  "version": "1.0.0",
+  "description": "引擎决策矩阵 — 由 tech-selector.ts 在运行时加载。如需调整引擎评分/权重/游戏类型映射，直接编辑此文件即可，无需修改 TypeScript 源码。",
+  "matrix": [
+    {
+      "engine": "react-vite-tailwind",
+      "displayName": "React + Vite + Tailwind CSS",
+      "dimensions": {
+        "gameTypeFit": "放置/卡牌/休闲/文字冒险/轻度策略",
+        "bundleSize": 5,
+        "hotUpdate": 10,
+        "crossPlatform": 8,
+        "performance": 5,
+        "learningCurve": 9,
+        "aiGeneration": 10,
+        "ecosystemSize": 10,
+        "teamSizeFit": "1-3人",
+        "apkPackaging": "Capacitor/Cordova"
+      },
+      "tags": ["轻量", "热更新", "前端友好", "快速迭代"]
+    },
+    {
+      "engine": "godot",
+      "displayName": "Godot 4.x",
+      "dimensions": {
+        "gameTypeFit": "2D通用/2.5D/轻3D/像素/平台跳跃",
+        "bundleSize": 25,
+        "hotUpdate": 4,
+        "crossPlatform": 9,
+        "performance": 8,
+        "learningCurve": 6,
+        "aiGeneration": 7,
+        "ecosystemSize": 6,
+        "teamSizeFit": "1-5人",
+        "apkPackaging": "原生导出"
+      },
+      "tags": ["开源", "2D优先", "轻量引擎", "跨平台"]
+    },
+    {
+      "engine": "unity",
+      "displayName": "Unity",
+      "dimensions": {
+        "gameTypeFit": "3D/重度/动作/射击/开放世界",
+        "bundleSize": 50,
+        "hotUpdate": 4,
+        "crossPlatform": 10,
+        "performance": 10,
+        "learningCurve": 3,
+        "aiGeneration": 5,
+        "ecosystemSize": 10,
+        "teamSizeFit": "3-20人",
+        "apkPackaging": "原生导出"
+      },
+      "tags": ["3D", "重度游戏", "企业级", "最成熟"]
+    }
+  ],
+  "weights": [
+    { "key": "gameTypeFitWeight", "weight": 25, "higherIsBetter": true },
+    { "key": "bundleSize", "weight": 8, "higherIsBetter": false },
+    { "key": "hotUpdate", "weight": 12, "higherIsBetter": true },
+    { "key": "crossPlatform", "weight": 5, "higherIsBetter": true },
+    { "key": "performance", "weight": 10, "higherIsBetter": true },
+    { "key": "learningCurve", "weight": 10, "higherIsBetter": true },
+    { "key": "aiGeneration", "weight": 15, "higherIsBetter": true },
+    { "key": "ecosystemSize", "weight": 8, "higherIsBetter": true },
+    { "key": "teamSizeFitScore", "weight": 7, "higherIsBetter": true }
+  ],
+  "gameTypeMap": {
+    "idle": { "react-vite-tailwind": 10, "godot": 5, "unity": 3 },
+    "card": { "react-vite-tailwind": 9, "godot": 6, "unity": 5 },
+    "casual": { "react-vite-tailwind": 8, "godot": 7, "unity": 5 },
+    "text-adventure": { "react-vite-tailwind": 10, "godot": 4, "unity": 2 },
+    "roguelike": { "react-vite-tailwind": 5, "godot": 9, "unity": 7 },
+    "platformer": { "react-vite-tailwind": 4, "godot": 10, "unity": 8 },
+    "2d-game": { "react-vite-tailwind": 4, "godot": 10, "unity": 7 },
+    "2d-platformer": { "react-vite-tailwind": 3, "godot": 10, "unity": 8 },
+    "3d-game": { "react-vite-tailwind": 1, "godot": 7, "unity": 10 },
+    "action": { "react-vite-tailwind": 2, "godot": 7, "unity": 10 },
+    "shooter": { "react-vite-tailwind": 1, "godot": 6, "unity": 10 },
+    "rpg": { "react-vite-tailwind": 3, "godot": 8, "unity": 9 }
+  }
+}
