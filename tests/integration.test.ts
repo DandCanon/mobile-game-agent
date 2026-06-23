@@ -110,7 +110,7 @@ describe('Tech Selector', () => {
 
 describe('Planner', () => {
   const baseContext: Context = {
-    workspacePath: 'D:\\Marvis\\手游AI开发Agent\\test-project',
+    workspacePath: 'D:\\path\\to\\mobile-game-agent\\test-project',
     currentPhase: '立项',
     history: [],
     artifacts: [],
@@ -333,7 +333,7 @@ describe('Reflector', () => {
 /* ===================== 4. Marvis 适配器集成 ===================== */
 
 describe('Marvis Adapter', () => {
-  const workspacePath = 'D:\\Marvis\\手游AI开发Agent\\test-project';
+  const workspacePath = 'D:\\path\\to\\mobile-game-agent\\test-project';
 
   it('health 返回正确信息', async () => {
     const adapter = new MarvisAdapter(workspacePath);

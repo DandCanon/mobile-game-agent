@@ -13,7 +13,7 @@ import { describe, it, expect } from 'vitest';
 import { Gateway } from '../orchestration/gateway';
 import { MarvisAdapter } from '../adapters/marvis-adapter';
 
-const WORKSPACE = 'D:\\Marvis\\手游AI开发Agent\\e2e-test';
+const WORKSPACE = 'D:\\path\\to\\mobile-game-agent\\e2e-test';
 
 function createGateway(): { gateway: Gateway; adapter: MarvisAdapter } {
   const adapter = new MarvisAdapter(WORKSPACE);

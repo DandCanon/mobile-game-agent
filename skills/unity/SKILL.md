@@ -1,7 +1,7 @@
 ---
 name: unity
 version: 1.0.0
-description: Unity Engine 游戏开发助手 — 覆盖 C# MonoBehaviour 脚本生成、ScriptableObject 数据容器、Prefab 实例化与管理、协程与异步操作、Input System 新输入系统、物理/动画/UI 系统最佳实践
+description: Unity Engine 游戏开发助手 — 覆盖 C# MonoBehaviour 脚本生成、ScriptableObject 数据容器、engine template 实例化与管理、协程与异步操作、Input System 新输入系统、物理/动画/UI 系统最佳实践
 engines:
   - unity-2022
   - unity-6
@@ -10,14 +10,14 @@ triggers:
   - c#
   - unity3d
   - monobehaviour
-  - prefab
+  - engineTemplate
   - scriptableobject
   - gameobject
   - component
 capabilities:
   - C# MonoBehaviour 脚本生成
   - ScriptableObject 数据容器
-  - Prefab 实例化与管理
+  - engine template 实例化与管理
   - 协程与异步操作
   - Input System 新输入系统
   - 物理 / 动画 / UI 系统最佳实践
@@ -31,7 +31,7 @@ capabilities:
 
 ## 触发条件
 
-当用户提到 Unity、C# 脚本、MonoBehaviour、GameObject、Prefab、ScriptableObject 等关键词，或明确需要 Unity 引擎适配时激活。
+当用户提到 Unity、C# 脚本、MonoBehaviour、GameObject、engine template、ScriptableObject 等关键词，或明确需要 Unity 引擎适配时激活。
 
 ## 能力边界
 
@@ -39,7 +39,7 @@ capabilities:
 
 - 生成标准 `MonoBehaviour` C# 脚本（含完整的生命周期回调）
 - 创建 `ScriptableObject` 数据容器
-- 实现 `Object.Instantiate` / `Destroy` 的 Prefab 管理逻辑
+- 实现 `Object.Instantiate` / `Destroy` 的 engine template 管理逻辑
 - 编写 `IEnumerator` 协程和 `async/await` UniTask 模式
 - 适配 Unity Input System (`UnityEngine.InputSystem`)
 - 实现 `CharacterController` 移动、`Rigidbody` / `Rigidbody2D` 物理
@@ -59,7 +59,7 @@ capabilities:
 | GameObject | 场景中所有实体的容器 | `new GameObject()` / `GameObject.Find()` |
 | Component | 附加到 GameObject 的功能模块 | `GetComponent<T>()` / `AddComponent<T>()` |
 | MonoBehaviour | 所有脚本的基类 | `Awake()` / `Start()` / `Update()` / `FixedUpdate()` |
-| Prefab | 可复用的 GameObject 模板 | `Instantiate(prefab)` / `PrefabUtility` |
+| engine template | 可复用的 GameObject 模板 | `Instantiate(engineTemplate)` / `engine templateUtility` |
 | Scene | 游戏世界容器 | `SceneManager.LoadScene()` |
 | Transform | 位置/旋转/缩放 | `transform.position` / `transform.rotation` |
 | ScriptableObject | 数据资产（非场景绑定） | `CreateAssetMenu` / `[SerializeField]` |
@@ -115,16 +115,16 @@ private void OnDisable()
 public class ObjectPool<T> where T : Component
 {
     private readonly Queue<T> _pool = new();
-    private readonly T _prefab;
+    private readonly T _engineTemplate;
     private readonly Transform _parent;
 
-    public ObjectPool(T prefab, int initialSize, Transform parent = null)
+    public ObjectPool(T engineTemplate, int initialSize, Transform parent = null)
     {
-        _prefab = prefab;
+        _engineTemplate = engineTemplate;
         _parent = parent;
         for (int i = 0; i < initialSize; i++)
         {
-            var obj = Object.Instantiate(_prefab, _parent);
+            var obj = Object.Instantiate(_engineTemplate, _parent);
             obj.gameObject.SetActive(false);
             _pool.Enqueue(obj);
         }

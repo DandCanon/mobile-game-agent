@@ -19,6 +19,7 @@ import type {
   InterfaceContract,
   DataModel,
   AcceptanceCriterion,
+  AndroidSdkIntegrationConfig,
 } from '../protocol/agent-protocol';
 import type { TechSelectionInput } from '../protocol/agent-protocol';
 import { selectTechStack } from './tech-selector';
@@ -28,6 +29,12 @@ import { InjectionStrategy } from '../src/memory-v2/injection';
 import { generateStyleAndMotion } from '../src/style-director/style-director';
 import { generateArtDirection } from '../src/style-director/art-direction-generator';
 import { recallKnowledgeCards } from './knowledge-recall';
+import { generateProgressionSpec } from '../src/numerics/xianxia-progression';
+import {
+  shouldInjectAndroidSdkStep,
+  generateAndroidSdkDoc,
+} from '../src/android-sdk/android-sdk-planner';
+import { createPresetAdapters } from '../src/android-sdk/types';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
@@ -1449,6 +1456,89 @@ export function generatePlan(
   // 4. 风险提示
   const risks = buildRisks(targetEngine, gameType);
 
+  // 4.5. Android SDK 集成步骤注入（Unity + Android 平台自动触发）
+  let androidSdkIntegrationPath: string | undefined;
+  if (shouldInjectAndroidSdkStep(targetEngine, explicitPlatforms, userRequest)) {
+    const adapters = createPresetAdapters();
+    const sdkConfig: AndroidSdkIntegrationConfig = {
+      packageName: 'com.example.unitygame',
+      minSdkVersion: 24,
+      targetSdkVersion: 34,
+      screenOrientation: 'sensorLandscape',
+    };
+
+    // 根据需求中的关键词启用对应 SDK
+    const lower = userRequest.toLowerCase();
+    if (/支付|内购|购买|商城|shop/i.test(lower)) {
+      const billing = adapters.find((a) => a.id === 'google-play-billing');
+      if (billing) billing.enabled = true;
+    }
+    if (/广告|激励|插屏|banner|admob/i.test(lower)) {
+      const admob = adapters.find((a) => a.id === 'admob');
+      if (admob) admob.enabled = true;
+    }
+    if (/推送|通知|push|notification/i.test(lower)) {
+      const fcm = adapters.find((a) => a.id === 'firebase-cloud-messaging');
+      if (fcm) fcm.enabled = true;
+    }
+    if (/统计|分析|analytics|事件上报/i.test(lower)) {
+      const analytics = adapters.find((a) => a.id === 'firebase-analytics');
+      if (analytics) analytics.enabled = true;
+    }
+    if (/崩溃|crash|异常|报错/i.test(lower)) {
+      const crashlytics = adapters.find((a) => a.id === 'firebase-crashlytics');
+      if (crashlytics) crashlytics.enabled = true;
+    }
+    if (/客服|消息|in-app/i.test(lower)) {
+      const inapp = adapters.find((a) => a.id === 'firebase-inapp-messaging');
+      if (inapp) inapp.enabled = true;
+    }
+
+    androidSdkIntegrationPath = generateAndroidSdkDoc(context.workspacePath, {
+      ...sdkConfig,
+      adapters,
+    });
+
+    // 注入 Android SDK 集成步骤
+    const prevIds = steps.length > 0 ? [steps[steps.length - 1].id] : [];
+    steps.push({
+      id: `step-${String(stepIndex + 1).padStart(2, '0')}`,
+      phase: '生产' as PipelinePhase,
+      title: 'android-sdk-integration',
+      description: `Android SDK 集成文档已生成至 ${androidSdkIntegrationPath}，内容包含 Unity Host Activity 生命周期、SDK Adapter 合同、Manifest checklist、权限说明、模块建议（支付/广告/推送/统计/崩溃/客服）、真机调试与 logcat 验证步骤。`,
+      directoryStructure: [`${context.workspacePath}\\docs`],
+      interfaceContracts: [],
+      dataModels: [],
+      acceptanceCriteria: [
+        {
+          id: 'android-sdk-1',
+          description: 'ANDROID_SDK_INTEGRATION.md 存在',
+          verifyBy: 'file-exists',
+          verifyParam: androidSdkIntegrationPath,
+        },
+        {
+          id: 'android-sdk-2',
+          description: '文档不包含私有包名/类名/密钥',
+          verifyBy: 'manual',
+          verifyParam: 'search: private-package-id | PrivateUnityHostActivity | PrivateGameApplication',
+        },
+        {
+          id: 'android-sdk-3',
+          description: 'TypeScript 编译零报错',
+          verifyBy: 'type-check',
+          verifyParam: 'npx tsc --noEmit',
+        },
+      ],
+      estimatedTools: ['write_file'],
+      dependencies: prevIds,
+      maxCodeLines: 0,
+    });
+    stepIndex++;
+    risks.push(
+      '已自动注入 Android SDK 集成步骤。请根据实际渠道需求补充 google-services.json 和密钥配置（模板中均为占位符）。',
+    );
+  }
+
   // 5. UI 风格与动效指南生成（仅当有具体品类时）
   let styleGuidePath = '';
   let motionGuidePath = '';
@@ -1473,6 +1563,26 @@ export function generatePlan(
       writeFileSync(artDirPath, result.artDirection, 'utf-8');
       artDirectionPath = artDirPath;
     }
+  }
+
+  // 5.5. 数值规格生成（修仙 + 放置品类自动触发）
+  let progressionSpecPath = '';
+  const isXianxia = /修仙|仙侠|xianxia/i.test(userRequest);
+  const isIdle = /放置|idle|挂机|afk/i.test(userRequest);
+  if (isXianxia && isIdle) {
+    const docsDir = join(context.workspacePath, 'docs');
+    mkdirSync(docsDir, { recursive: true });
+
+    const progression = generateProgressionSpec();
+    const specPath = join(docsDir, 'PROGRESSION_BALANCE_SPEC.md');
+    writeFileSync(specPath, progression.specContent, 'utf-8');
+    progressionSpecPath = specPath;
+
+    plannerLogger.info('修仙放置数值模型已生成', {
+      path: specPath,
+      fairnessChecks: progression.fairnessChecks.length,
+      p2wRisks: progression.p2wRisks.length,
+    });
   }
 
   // 6. 可用 Skill 建议
@@ -1500,6 +1610,8 @@ export function generatePlan(
     motionGuidePath: motionGuidePath || undefined,
     artDirectionPath: artDirectionPath || undefined,
     knowledgeCards: recallResult.compactPrompt || undefined,
+    androidSdkIntegrationPath,
+    progressionSpecPath: progressionSpecPath || undefined,
   };
 
   // 6. [Memory v2] 构建 System Prompt 前缀（向后兼容）
@@ -1549,7 +1661,7 @@ function inferPerformanceLevel(userRequest: string, gameType: string): 'low' | '
 
 function parsePlatforms(userRequest: string): string[] {
   const platforms: string[] = [];
-  if (/android|安卓|apk/i.test(userRequest)) platforms.push('Android');
+  if (/android|安卓|android-package/i.test(userRequest)) platforms.push('Android');
   if (/ios|苹果|ipa/i.test(userRequest)) platforms.push('iOS');
   if (/web|网页|浏览器|h5/i.test(userRequest)) platforms.push('Web');
   return platforms.length > 0 ? platforms : ['Android', 'iOS'];

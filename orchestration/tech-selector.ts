@@ -50,7 +50,7 @@ const FALLBACK_TECH_MATRIX: TechMatrixEntry[] = [
       aiGeneration: 10,
       ecosystemSize: 10,
       teamSizeFit: '1-3人',
-      apkPackaging: 'Capacitor/Cordova',
+      androidPackagePackaging: 'Capacitor/Cordova',
     },
     tags: ['轻量', '热更新', '前端友好', '快速迭代'],
   },
@@ -67,7 +67,7 @@ const FALLBACK_TECH_MATRIX: TechMatrixEntry[] = [
       aiGeneration: 7,
       ecosystemSize: 6,
       teamSizeFit: '1-5人',
-      apkPackaging: '原生导出',
+      androidPackagePackaging: '原生导出',
     },
     tags: ['开源', '2D优先', '轻量引擎', '跨平台'],
   },
@@ -75,7 +75,7 @@ const FALLBACK_TECH_MATRIX: TechMatrixEntry[] = [
     engine: 'unity',
     displayName: 'Unity',
     dimensions: {
-      gameTypeFit: '3D/重度/动作/射击/开放世界',
+      gameTypeFit: '3D/重度/动作/射击/开放世界/修仙/放置/RPG/商业手游',
       bundleSize: 50,
       hotUpdate: 4,
       crossPlatform: 10,
@@ -84,9 +84,13 @@ const FALLBACK_TECH_MATRIX: TechMatrixEntry[] = [
       aiGeneration: 5,
       ecosystemSize: 10,
       teamSizeFit: '3-20人',
-      apkPackaging: '原生导出',
+      androidPackagePackaging: '原生导出',
+      androidHost: 'IL2CPP + runtime script 三层架构，Android Host Activity 桥接，Manager 体系完整',
+      assetPipeline: 'content bundle 管线，CDN 热更新，版本校验，降级回退',
+      sdkLifecycle: '完善 SDK 生命周期管理，支付/广告/推送/统计/崩溃全链路',
+      debugToolchain: 'adb logcat / Android profiler / Frame Debugger / runtime script 异常追踪',
     },
-    tags: ['3D', '重度游戏', '企业级', '最成熟'],
+    tags: ['3D', '重度游戏', '企业级', '最成熟', '手游管线', '热更新', '跨平台'],
   },
 ];
 
@@ -109,7 +113,7 @@ const FALLBACK_WEIGHTS: DimensionWeight[] = [
 ];
 
 const FALLBACK_GAME_TYPE_MAP: Record<string, Record<string, number>> = {
-  idle: { 'react-vite-tailwind': 10, godot: 5, unity: 3 },
+  idle: { 'react-vite-tailwind': 10, godot: 5, unity: 8 },
   card: { 'react-vite-tailwind': 9, godot: 6, unity: 5 },
   casual: { 'react-vite-tailwind': 8, godot: 7, unity: 5 },
   'text-adventure': { 'react-vite-tailwind': 10, godot: 4, unity: 2 },
@@ -120,7 +124,8 @@ const FALLBACK_GAME_TYPE_MAP: Record<string, Record<string, number>> = {
   '3d-game': { 'react-vite-tailwind': 1, godot: 7, unity: 10 },
   action: { 'react-vite-tailwind': 2, godot: 7, unity: 10 },
   shooter: { 'react-vite-tailwind': 1, godot: 6, unity: 10 },
-  rpg: { 'react-vite-tailwind': 3, godot: 8, unity: 9 },
+  rpg: { 'react-vite-tailwind': 3, godot: 8, unity: 10 },
+  xianxia: { 'react-vite-tailwind': 2, godot: 6, unity: 10 },
 };
 
 /* ===================== 数据加载 ===================== */
@@ -277,6 +282,12 @@ export function selectTechStack(input: TechSelectionInput): TechSelectionOutput 
     scores[entry.engine] = Math.round(score * 100) / 100;
   }
 
+  // Unity 关键词额外加分
+  const unityBoost = calcUnityKeywordBoost(input);
+  if (unityBoost > 0 && scores['unity'] !== undefined) {
+    scores['unity'] += unityBoost;
+  }
+
   // 排名
   const ranking = Object.entries(scores)
     .sort(([, a], [, b]) => b - a)
@@ -322,11 +333,46 @@ function normalizeGameType(input: string): string {
     '动作': 'action', 'action': 'action',
     '射击': 'shooter', 'shooter': 'shooter', 'fps': 'shooter',
     'rpg': 'rpg', '角色扮演': 'rpg',
+    '修仙': 'xianxia', '仙侠': 'xianxia', 'xianxia': 'xianxia',
     '2d游戏': '2d-game', '2d game': '2d-game', '2d': '2d-game',
     '3d游戏': '3d-game', '3d game': '3d-game', '3d': '3d-game',
     '2d平台': '2d-platformer', '2d platformer': '2d-platformer',
   };
   return map[lower] ?? lower;
+}
+
+/** Unity 偏好关键词：当用户需求中包含这些词时，大幅提升 Unity 权重 */
+const UNITY_BOOST_KEYWORDS = [
+  'unity', '手游', 'android', 'il2cpp', 'runtime-script', 'content-bundle',
+  '商业手游', '真机调试', 'sdk', 'manager', '热更新', 'android-package',
+  '上架', '渠道包', '包体', 'cdn', '3d', '三维',
+  '修仙', '仙侠', '放置', 'rpg', '角色扮演',
+];
+
+/**
+ * 检查输入中是否包含 Unity 偏好关键词，是则返回额外加分。
+ */
+function calcUnityKeywordBoost(input: TechSelectionInput): number {
+  const haystack = [
+    input.gameType,
+    input.developerExperience,
+    ...input.targetPlatforms,
+  ].join(' ').toLowerCase();
+
+  let boost = 0;
+  for (const kw of UNITY_BOOST_KEYWORDS) {
+    if (haystack.includes(kw)) boost += 1.5;
+  }
+  // 如果同时命中 手游 + android，加倍
+  if (haystack.includes('android') && haystack.includes('手游')) boost += 5;
+  // 如果平台明确含 Android 且开发者经验含 C#/Unity
+  if (
+    input.targetPlatforms.some((p) => p.toLowerCase() === 'android') &&
+    /c#|unity/i.test(input.developerExperience)
+  ) {
+    boost += 5;
+  }
+  return Math.min(boost, 30); // 上限 30 分
 }
 
 function parseTeamSize(fit: string): [number, number] {
@@ -360,7 +406,7 @@ function buildCons(engine: TechStack['engine'], input: TechSelectionInput): stri
   const cons: Record<string, string[]> = {
     'react-vite-tailwind': ['性能受 WebView 限制，不适合重度 3D', '原生功能需通过插件桥接'],
     godot: ['热更新需自建方案', '3D 渲染不如 Unity 成熟', '社区资源总量仍小于 Unity'],
-    unity: ['包体较大（50MB+）', '学习曲线陡峭', 'AI 代码生成质量相对较低'],
+    unity: ['包体较大（50MB+）', '学习曲线陡峭', 'AI 代码生成质量相对较低', 'content bundle 管线初次搭建成本高'],
   };
 
   const base = cons[engine] ?? [];

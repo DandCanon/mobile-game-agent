@@ -2,7 +2,7 @@
 
 > 风格包：xianxia-ink-premium
 > 引擎：react-vite-tailwind
-> 生成时间：2026-06-22
+> 生成时间：2026-06-23
 
 ## 动效 Token 目录
 

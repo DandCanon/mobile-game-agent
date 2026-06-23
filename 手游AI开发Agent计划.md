@@ -1,6 +1,6 @@
 # 手游 AI 开发 Agent — 开发计划 v4.3-dev
 
-> 更新日期：2026-06-13 | 工作目录：`D:\Marvis\手游AI开发Agent\`
+> 更新日期：2026-06-13 | 工作目录：`D:\path\to\mobile-game-agent\`
 > 当前版本：0.8.0  |  `npx tsc --noEmit` 零报错 | vitest 全部通过
 > 最后评审：2026-06-13（Claude + Gemini 双审 + Codex 复审，v4.1 整改方案已合入；v4.2：Phase 0-3f 全部落地）
 
@@ -364,7 +364,7 @@ Agent 不直接「内置」任何引擎——它内置的是**技术选型决策
 ## 五、项目目录结构（v4 整改后）
 
 ```
-D:\Marvis\手游AI开发Agent\
+D:\path\to\mobile-game-agent\
 ├── README.md
 ├── 手游AI开发Agent计划.md          # 本文件（v4 整改方案已合入）
 ├── 架构设计文档.md

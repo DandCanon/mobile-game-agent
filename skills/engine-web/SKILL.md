@@ -17,7 +17,7 @@ capabilities:
   - numeric-system
   - ui-components
   - local-storage
-  - apk-packaging
+  - android-package-packaging
 ---
 
 # engine-web Skill 规格说明

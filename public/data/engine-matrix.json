@@ -15,7 +15,7 @@
         "aiGeneration": 10,
         "ecosystemSize": 10,
         "teamSizeFit": "1-3人",
-        "apkPackaging": "Capacitor/Cordova"
+        "androidPackagePackaging": "Capacitor/Cordova"
       },
       "tags": ["轻量", "热更新", "前端友好", "快速迭代"]
     },
@@ -32,7 +32,7 @@
         "aiGeneration": 7,
         "ecosystemSize": 6,
         "teamSizeFit": "1-5人",
-        "apkPackaging": "原生导出"
+        "androidPackagePackaging": "原生导出"
       },
       "tags": ["开源", "2D优先", "轻量引擎", "跨平台"]
     },
@@ -49,7 +49,7 @@
         "aiGeneration": 5,
         "ecosystemSize": 10,
         "teamSizeFit": "3-20人",
-        "apkPackaging": "原生导出"
+        "androidPackagePackaging": "原生导出"
       },
       "tags": ["3D", "重度游戏", "企业级", "最成熟"]
     }

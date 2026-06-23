@@ -94,6 +94,9 @@ export function generateCode(step: PlanStep): GeneratedFile[] {
     /* ---- AI 行为系统 ai-behavior ---- */
     case 'ai-behavior':
       return generateAIBehavior();
+    /* ---- Unity Spec 产物（手游工程模板） ---- */
+    case 'unity-spec':
+      return generateUnitySpec();
     default:
       return [];
   }
@@ -4601,16 +4604,16 @@ namespace Game.Utils
     public class ObjectPool<T> where T : Component
     {
         private readonly Queue<T> _pool = new();
-        private readonly T _prefab;
+        private readonly T _engineTemplate;
         private readonly Transform _parent;
 
         public int ActiveCount { get; private set; }
         public int InactiveCount => _pool.Count;
         public int TotalCount => ActiveCount + InactiveCount;
 
-        public ObjectPool(T prefab, int initialSize = 10, Transform parent = null)
+        public ObjectPool(T engineTemplate, int initialSize = 10, Transform parent = null)
         {
-            _prefab = prefab;
+            _engineTemplate = engineTemplate;
             _parent = parent;
 
             for (int i = 0; i < initialSize; i++)
@@ -4695,7 +4698,7 @@ namespace Game.Utils
 
         private T CreateNew()
         {
-            T obj = Object.Instantiate(_prefab, _parent);
+            T obj = Object.Instantiate(_engineTemplate, _parent);
             obj.gameObject.SetActive(false);
             _pool.Enqueue(obj);
             return obj;
@@ -5104,20 +5107,20 @@ namespace Game.Utils
     public class ObjectPool<T> where T : Component
     {
         private readonly Queue<T> _pool = new();
-        private readonly T _prefab;
+        private readonly T _engineTemplate;
         private readonly Transform _parent;
 
         public int ActiveCount { get; private set; }
         public int InactiveCount => _pool.Count;
 
-        public ObjectPool(T prefab, int initialSize = 10, Transform parent = null)
+        public ObjectPool(T engineTemplate, int initialSize = 10, Transform parent = null)
         {
-            _prefab = prefab;
+            _engineTemplate = engineTemplate;
             _parent = parent;
 
             for (int i = 0; i < initialSize; i++)
             {
-                T obj = Object.Instantiate(_prefab, _parent);
+                T obj = Object.Instantiate(_engineTemplate, _parent);
                 obj.gameObject.SetActive(false);
                 _pool.Enqueue(obj);
             }
@@ -5125,7 +5128,7 @@ namespace Game.Utils
 
         public T Get()
         {
-            T obj = _pool.Count > 0 ? _pool.Dequeue() : Object.Instantiate(_prefab, _parent);
+            T obj = _pool.Count > 0 ? _pool.Dequeue() : Object.Instantiate(_engineTemplate, _parent);
             obj.gameObject.SetActive(true);
             ActiveCount++;
             return obj;
@@ -5152,7 +5155,7 @@ namespace Game.Utils
         {
             while (_pool.Count + ActiveCount < targetSize)
             {
-                T obj = Object.Instantiate(_prefab, _parent);
+                T obj = Object.Instantiate(_engineTemplate, _parent);
                 obj.gameObject.SetActive(false);
                 _pool.Enqueue(obj);
             }
@@ -5694,6 +5697,585 @@ export type {
   GOAPAction,
   GOAPGoal,
 } from './goap';
+`,
+    },
+  ];
+}
+
+/* ================================================================
+ * Unity Spec 产物 — 当 targetEngine 为 unity 时生成工程模板文档
+ * ================================================================ */
+
+function generateUnitySpec(): GeneratedFile[] {
+  return [
+    {
+      filePath: 'docs/MANAGER_ARCHITECTURE.md',
+      content: `# Manager Architecture — Unity C# Core + runtime script Gameplay Layer
+
+> 基于 IL2CPP + runtime script 三层架构的 Unity 手游 Manager 体系设计
+> 生成时间：${new Date().toISOString().split('T')[0]}
+
+## 架构概览
+
+本手游采用\\\`C# Engine Core + runtime script Gameplay/UI Layer\\\`的分层架构：
+
+- **C# Native Core**：提供引擎级 Manager 服务（资源、UI、音频、更新调度、平台桥接）
+- **runtime script Scripting Layer**：承载全部游戏逻辑、UI 流程、数据模型、事件路由和配置驱动行为
+- **C#-runtime script Bridge**：薄封装层，将 C# Manager API 统一暴露给 runtime script，禁止 runtime script 直接访问 UnityEngine 内部
+
+## Manager 清单
+
+### 1. ResourceManager
+
+| 项目 | 说明 |
+|------|------|
+| 职责 | 抽象资源加载管线：同步/异步加载、引用计数、LRU/优先级缓存淘汰、场景预加载、Bundle 依赖解析 |
+| 暴露接口 | \`LoadAsset(path)\`, \`LoadAssetAsync(path, callback)\`, \`UnloadAsset(path)\`, \`PreloadScene(scene)\` |
+| 生命周期 | 引擎启动时初始化 → 加载并缓存常用资源 → 场景切换/低内存时释放未使用资源 → 关机时清空 |
+| 约束 | 禁止向 runtime script 暴露原始 content bundle 句柄，仅暴露逻辑资源定位信息 |
+
+### 2. UIManager
+
+| 项目 | 说明 |
+|------|------|
+| 职责 | 维护 UI 窗口栈（push/pop/replace 语义）；管理面板生命周期（preload/show/hide/pause/resume/close/destroy）；Canvas 层级管理（background/normal/popup/toast/loading/top）；安全区适配与分辨率缩放 |
+| 暴露接口 | \`OpenPanel(name, params)\`, \`ClosePanel(name)\`, \`GetPanel(name)\`, \`ShowToast(msg)\` |
+| 生命周期 | ResourceManager 就绪后初始化；面板注册 engine template 引用和 runtime script 控制器绑定；栈操作触发对应生命周期回调 |
+
+### 3. runtime scriptManager
+
+| 项目 | 说明 |
+|------|------|
+| 职责 | 初始化并管理 runtime script VM 实例；C# 到 runtime script 类型绑定和调用编组；runtime script 脚本热更新（下载→解包→校验→VM 重载/重启）；统一异常处理和堆栈格式化 |
+| 暴露接口 | \`DoString(code)\`, \`DoFile(path)\`, \`CallGlobalFunc(name, args)\`, \`HotReload(bundlePath)\` |
+| 生命周期 | 启动序列早期初始化；热更新检查在 runtime script 业务代码执行前完成；VM 重启必须隔离，不导致 Native Host 崩溃 |
+
+### 4. EventManager
+
+| 项目 | 说明 |
+|------|------|
+| 职责 | 全局发布/订阅事件总线，解耦 runtime script 模块和 C# Manager；支持事件命名空间、优先级排序、一次性监听、帧内批量刷新 |
+| 暴露接口 | \`Subscribe(event, handler, priority)\`, \`Unsubscribe(event, handler)\`, \`Publish(event, data)\` |
+| 生命周期 | 引擎核心启动后即可用；监听器在模块初始化时注册，在模块卸载时清理 |
+
+### 5. AudioManager
+
+| 项目 | 说明 |
+|------|------|
+| 职责 | BGM/SFX/语音播放管理；音量分组（Master/BGM/SFX/Voice）及平滑淡入淡出；音频源对象池；3D 空间音频；平台静音/闪避（来电/通知） |
+| 暴露接口 | \`PlayBGM(name, fadeIn)\`, \`PlaySFX(name, volume)\`, \`SetVolume(group, value)\`, \`StopAll()\` |
+| 生命周期 | ResourceManager 加载音频 Bank 后初始化；响应系统音频焦点变化；场景卸载时回收音频源 |
+
+### 6. UpdateManager
+
+| 项目 | 说明 |
+|------|------|
+| 职责 | 统一驱动每帧逻辑：将 Update/LateUpdate/FixedUpdate/OnGUI 调用路由到注册的处理器；支持优先级排序和分组条件暂停；避免分散的 MonoBehaviour.Update() |
+| 暴露接口 | \`RegisterUpdate(handler, priority)\`, \`RegisterLateUpdate(handler)\`, \`RegisterFixedUpdate(handler)\`, \`Unregister(handler)\` |
+| 生命周期 | 全应用生命周期活跃；处理器动态注册/注销；加载界面或系统弹窗期间暂停 |
+
+### 7. SDKAdapter
+
+| 项目 | 说明 |
+|------|------|
+| 职责 | 抽象平台特定 SDK 集成（登录/支付/推送/统计/广告/分享），提供统一 C# 接口；主线程缓冲原生回调；提供功能探测标志供 runtime script 运行时查询 SDK 可用性 |
+| 暴露接口 | \`Login()\`, \`Pay(order)\`, \`TrackEvent(name, params)\`, \`ShowAd(placement)\`, \`RegisterPush()\` |
+| 生命周期 | 按平台在 Native Host Activity/Application 中初始化；Adapter 注册到中央调度器；回调通过线程安全队列序列化到 Unity 主线程 |
+
+## 设计约束
+
+- 所有 Manager 单例延迟初始化，支持显式销毁以适应场景切换
+- runtime script 层通过 EventManager 实现模块间解耦，禁止直接跨 Manager 引用
+- C#-runtime script Bridge 保持稳定：新增 Manager API 时加而非改，保持向后兼容
+- 热更新必须原子化：下载完整 runtime script Bundle → 校验完整性 → 原子交换 VM 状态 → 失败回滚
+`,
+    },
+    {
+      filePath: 'docs/UNITY_RESOURCE_PIPELINE.md',
+      content: `# Unity Resource Pipeline — content bundle 管线设计
+
+> 基于 content bundle 的手游资源分包、CDN 分发与热更新方案
+> 生成时间：${new Date().toISOString().split('T')[0]}
+
+## 分包策略
+
+按三个维度组合分包：
+
+| 维度 | 说明 | 示例 |
+|------|------|------|
+| 按场景 | 每个场景及其独占资源组成独立 Bundle | \`scene_village\`, \`scene_dungeon\` |
+| 按功能 | 跨场景共享的通用资源按功能模块分包 | \`ui_common\`, \`fx_shared\` |
+| 按更新频率 | 高频变更内容独立分包，低频内容合并 | \`config_tables\` (高频), \`models_characters\` (低频) |
+
+## 资源分类
+
+| 分类 | 内容 | 打包策略 |
+|------|------|----------|
+| UI | engine template、sprite sheet、字体 | 按面板组打包，随 UI 变更高频更新 |
+| 模型 | 3D 网格、贴图、材质、动画、Avatar 组件 | 按角色/场景打包，更新频率中等 |
+| 音效 | BGM、SFX、语音 | 按音频 Bank 分组，控制压缩级别 |
+| 场景 | Unity Scene 文件及独占依赖 | 每场景一包，共享资源去重放入 shared |
+| 配置表 | 数值表、多语言文本、功能开关 | 单一小包，支持快速增量同步 |
+| runtime script 脚本 | runtime script 源码/字节码 | 单包或按模块拆分（大型代码库） |
+
+## Manifest 结构
+
+远程资源目录 JSON 格式：
+
+\`\`\`json
+{
+  "version": "1.2.3",
+  "minAppVersion": "1.0.0",
+  "bundles": [
+    {
+      "name": "ui_common",
+      "hash": "sha256:abc123...",
+      "size": 1048576,
+      "dependencies": [],
+      "cdnPath": "bundles/ui_common_v3.bundle",
+      "compression": "lz4"
+    }
+  ]
+}
+\`\`\`
+
+## 热更新流程
+
+\`\`\`
+启动 → 获取远程版本 Manifest → 对比本地 Manifest
+  → 计算 Delta（新增/修改/删除的 Bundle）
+  → 下载 Delta Bundle（支持断点续传 & 重试）
+  → 逐 Bundle 校验 SHA256
+  → 原子交换本地 Catalog
+  → 下次启动应用（或 Live Reload runtime script）
+\`\`\`
+
+## 版本校验
+
+| 方案 | 适用场景 | 说明 |
+|------|----------|------|
+| MD5 | 快速校验 | 128-bit，速度优先，适合小文件 |
+| SHA256 | 生产环境 | 256-bit，安全性高，推荐 |
+| CRC32 | 传输校验 | 32-bit，检测网络传输损坏 |
+
+远程 Manifest 中声明 per-bundle SHA256 hash，客户端下载完成后校验比对，失败则重试或降级。
+
+## 降级与回退
+
+- **CDN 不可达**：使用本地缓存 Bundle 继续运行，不阻塞玩家进入游戏
+- **版本检查失败**：回退到上一次成功的 Catalog 快照
+- **新版本崩溃**：记录启动崩溃计数，超过阈值自动回退到旧版本快照
+- **灰度发布**：按渠道/地区/用户百分比逐步放量，降低全量风险
+`,
+    },
+    {
+      filePath: 'docs/ANDROID_SDK_LIFECYCLE.md',
+      content: `# Android SDK Lifecycle — Unity 手游 Android 层集成指南
+
+> Unity Android Host 生命周期管理、SDK Adapter 合同、Manifest 检查清单
+> 生成时间：${new Date().toISOString().split('T')[0]}
+
+## Unity Host Activity 生命周期
+
+Unity Android 手游在 Native 层需要一个 Host Activity 作为生命周期桥接：
+
+\`\`\`
+Application.onCreate()
+  → SDK 初始化（Crash Reporting → Analytics → Push → Ads → Payment）
+  → Unity 引擎启动
+
+Activity.onCreate()
+  → 加载 Unity Player
+  → 注册 SDK 回调路由
+
+Activity.onResume()  → 恢复游戏逻辑 / 广告 / 音频
+Activity.onPause()   → 暂停游戏 / 保存状态
+Activity.onDestroy() → 释放 SDK 资源 / 清理
+\`\`\`
+
+## SDK Adapter 合同
+
+每个 SDK Adapter 需要实现以下生命周期钩子：
+
+| 钩子 | 调用时机 | 职责 |
+|------|----------|------|
+| \`init(app, activity)\` | Application.onCreate() | SDK 初始化配置 |
+| \`onActivityCreate(bundle)\` | Activity.onCreate() | Activity 级初始化 |
+| \`onResume()\` | Activity.onResume() | 恢复服务 |
+| \`onPause()\` | Activity.onPause() | 暂停服务 |
+| \`onDestroy()\` | Activity.onDestroy() | 释放资源 |
+| \`onNewIntent(intent)\` | Activity.onNewIntent() | 深度链接/推送跳转 |
+| \`onActivityResult(req, res, data)\` | Activity.onActivityResult() | 支付/登录回调 |
+| \`onRequestPermissionsResult(req, perms, grants)\` | 权限回调 | 权限结果处理 |
+
+## Manifest 检查清单
+
+- [ ] Main Activity 声明正确，包含 LAUNCHER intent-filter
+- [ ] 所有 Activity/Service/Receiver/Provider 显式声明 \`android:exported\`
+- [ ] \`screenOrientation\` 与目标方向一致（sensorPortrait/sensorLandscape）
+- [ ] \`configChanges\` 包含 orientation|screenSize|keyboardHidden
+- [ ] FileProvider \`authorities\` 字符串唯一，不与其他应用冲突
+- [ ] 所需权限（INTERNET/ACCESS_NETWORK_STATE 等）已声明
+- [ ] Application 节点含 \`hardwareAccelerated="true"\`
+- [ ] 无 debug 专属权限或 metadata 泄露到 Release 构建
+
+## 公开 SDK 模块建议
+
+| 模块 | 推荐 SDK | 用途 |
+|------|----------|------|
+| 支付 | Google Play Billing | IAP 内购 |
+| 广告 | AdMob | 激励视频/插屏/Banner |
+| 推送 | Firebase Cloud Messaging (FCM) | 远程推送通知 |
+| 统计 | Firebase Analytics | 用户行为分析 |
+| 崩溃 | Firebase Crashlytics | 崩溃收集与分析 |
+| 应用内消息 | Firebase In-App Messaging | 运营弹窗与引导 |
+
+## 真机调试
+
+\`\`\`bash
+# 安装 Android install package
+adb install -r game.android-package
+
+# 启动应用
+adb shell am start -n com.example.game/.MainActivity
+
+# 抓取 Unity + Android 日志
+adb logcat -s Unity:V ActivityManager:V AndroidRuntime:E
+
+# 抓取崩溃日志
+adb logcat -b crash
+
+# 截屏
+adb exec-out screencap -p > screen.png
+
+# 收集完整 bug report
+adb bugreport
+\`\`\`
+`,
+    },
+    {
+      filePath: 'docs/DEVICE_DEBUG_CHECKLIST.md',
+      content: `# Device Debug Checklist — Unity Android 真机调试检查清单
+
+> adb 命令参考、日志过滤、资源加载诊断、网络与 CDN 排查
+> 生成时间：${new Date().toISOString().split('T')[0]}
+
+## 1. Manifest 检查
+
+- [ ] Main Activity 声明正确，LAUNCHER intent-filter 存在
+- [ ] 所有组件显式声明 \`android:exported\`
+- [ ] 权限声明匹配 SDK Adapter 需求
+- [ ] Application 节点 \`hardwareAccelerated="true"\`
+- [ ] FileProvider authorities 唯一
+- [ ] 无 debug 配置泄露到 Release 构建
+
+\`\`\`bash
+adb shell dumpsys package <package-name> | grep -A 50 'AndroidManifest'
+aapt dump badging <android-package-path>
+\`\`\`
+
+## 2. 启动检查
+
+- [ ] Application.onCreate() 在 5s 内完成（避免 ANR）
+- [ ] Main Activity onCreate → onStart → onResume 无异常
+- [ ] Unity Splash Screen 正常过渡到游戏场景
+- [ ] 首帧分析/崩溃上报回调在初始化完成后触发
+
+\`\`\`bash
+adb logcat -s ActivityManager:I | grep -E "Displayed|START"
+adb shell am start -W com.example.game/.MainActivity  # 冷启动耗时
+\`\`\`
+
+## 3. SDK 初始化检查
+
+- [ ] 崩溃上报 SDK 最先初始化
+- [ ] 统计 SDK 在崩溃上报之后初始化
+- [ ] 推送 SDK 在 Activity 创建后注册
+- [ ] 广告 SDK 延迟初始化（避免阻塞启动）
+- [ ] 支付 SDK 在游戏逻辑启动后初始化
+
+\`\`\`bash
+adb logcat | grep -iE "sdk|init|adapter|firebase|google"
+\`\`\`
+
+## 4. 日志检查
+
+- [ ] Unity Log tag 正确输出
+- [ ] 无 ANR 日志
+- [ ] 无崩溃堆栈
+- [ ] 无 runtime script 异常
+
+\`\`\`bash
+adb logcat -s Unity:V
+adb logcat -b crash
+adb logcat *:E
+\`\`\`
+
+## 5. 资源加载检查
+
+- [ ] content bundle 加载无失败日志
+- [ ] 无引用丢失警告
+- [ ] 首场景资源在冷启动预算内加载完毕
+
+\`\`\`bash
+adb logcat | grep -iE "content-bundle|resource|missing|failed|shader"
+\`\`\`
+
+## 6. runtime script/脚本错误检查
+
+- [ ] 无 runtime script 异常堆栈输出
+- [ ] 热更新加载无失败
+- [ ] 模块 require 无报错
+
+\`\`\`bash
+adb logcat | grep -iE "runtime-script|error|exception|stack trace"
+\`\`\`
+
+## 7. 网络与 CDN 检查
+
+- [ ] 资源下载无超时
+- [ ] SSL 证书验证正常
+- [ ] CDN 重定向正常
+- [ ] 请求域名在 DNS 可解析
+
+\`\`\`bash
+adb shell ping -c 5 cdn.example.com
+adb logcat | grep -iE "timeout|ssl|redirect|404|500|dns"
+\`\`\`
+`,
+    },
+    {
+      filePath: 'docs/UI_STACK_SPEC.md',
+      content: `# UI Stack Spec — 手游 UI 层级与面板规范
+
+> Unity UGUI 面板管理、生命周期、层级定义、交互规则
+> 生成时间：${new Date().toISOString().split('T')[0]}
+
+## UI 层级定义
+
+| 层级 | 排序 | 说明 | 示例 |
+|------|------|------|------|
+| Background | 0 | 常驻背景层，不可交互 | 主城场景、挂机场景 |
+| Normal | 100 | 常规功能面板，可堆叠 | 背包、角色、技能 |
+| Popup | 200 | 弹窗面板，模态遮罩 | 确认框、详情弹窗 |
+| Toast | 300 | 轻提示，自动消失 | 获得物品提示、错误提示 |
+| Loading | 400 | 加载遮罩，阻断交互 | 场景切换、数据加载 |
+| Top | 500 | 最高优先级覆盖 | 系统弹窗、支付确认、SDK 回调 |
+
+## 面板生命周期
+
+\`\`\`
+Preload → Show → (Pause → Resume)* → Hide → Close → Destroy
+\`\`\`
+
+| 状态 | 触发 | 行为 |
+|------|------|------|
+| Preload | 预加载请求 | 加载资源，不显示 |
+| Show | OpenPanel() | 播放入场动效，注册事件 |
+| Pause | 上层面板打开 | 暂停更新、音效 |
+| Resume | 上层面板关闭 | 恢复更新 |
+| Hide | ClosePanel() | 播放出场动效，注销事件 |
+| Close | 动效完成 | 回到缓存池或释放 |
+| Destroy | 场景切换/强制清理 | 完全释放资源 |
+
+## 面板交互规则
+
+- 弹窗层级面板打开时，下层 Normal 面板自动 Pause
+- 模态弹窗显示半透明遮罩，点击遮罩可关闭（配置项）
+- Toast 不阻断交互，3 秒自动消失
+- Loading 层阻断所有下层交互
+- 同一层级同一时间只能有一个面板处于 Show 状态
+`,
+    },
+    {
+      filePath: 'docs/XIANXIA_ART_DIRECTION.md',
+      content: `# Xianxia Art Direction — 修仙美术方向指南
+
+> 通用修仙/仙侠/国风游戏美术设计启发式，不含任何第三方原始素材
+> 生成时间：${new Date().toISOString().split('T')[0]}
+
+## 核心审美原则
+
+1. **修仙幻想是情感核心**：宁静成长、突破、宗门认同、法宝、道侣、境界、道途选择
+2. **UI 克制**：平日界面冷静清晰，突破/稀有掉落/Boss 胜利/新境界解锁时才释放视觉奇观
+3. **层次化视觉语言**：水墨、玉、金、丝绸、雾、符纸、云、星图、阵法、炼丹火、法宝光
+4. **配色克制**：中性底色 + 有意义的强调色（境界/元素/稀有度/宗门/危险状态）
+5. **可读性优先**：数值、计时器、消耗、奖励在装饰之前必须清晰可读
+
+## 反模式（禁止）
+
+- 过度发光 > 2 层叠加
+- 荧光色（#00FF00 / #FF00FF / #00FFFF 类）
+- 繁杂 UI（同时出现 >3 个弹窗/红点/倒计时）
+- 低质量粒子（块状、闪烁频率 >10Hz）
+- 信息噪音（同时出现超过 3 种竞争注意力的提示）
+- 页游式金色描边按钮
+- 现代 UI 组件混入（圆角卡片、渐变进度条）
+
+## 角色美术提示词结构
+
+角色生成使用模块化 Slot 架构：
+
+| Slot 层 | 包含 | 作用 |
+|---------|------|------|
+| 剪影定义层 | hair/cloth/top | 决定角色轮廓和职业辨识度 |
+| 稀有度表达层 | ear/decorate/mask/bodyglow/tattoo | 区分品质、主题和付费层级 |
+
+角色原型差异化（剪影先于配色）：
+剑修 → 身形挺直、负剑或横剑
+体修 → 魁梧体魄、拳掌架势
+符修 → 飘逸、符纸围绕
+丹修 → 药鼎/葫芦、温和
+阵修 → 阵盘/罗盘、沉稳
+兽修 → 灵兽相伴、野性
+魔道 → 暗色系、邪气
+正道 → 端正、清气
+
+## 场景美术提示词结构
+
+分层构建：
+\`\`\`
+基础环境 → 前景框 → 中景活动空间 → 背景氛围 → 天气/雾 → UI 安全区
+\`\`\`
+
+场景类型与进度映射：
+- 村落：初始 → 温暖、简单
+- 宗门山门：入门 → 庄严、云雾
+- 洞府：修炼 → 幽静、灵石光
+- 坊市：交易 → 热闹、灯笼
+- 禁地：挑战 → 阴森、封印纹
+- 古战场：中后期 → 荒凉、残兵
+- 灵矿：资源 → 荧光、晶石
+- 丹房：制作 → 火光、药香
+- 塔/秘境：爬塔 → 层进、机关
+- 飞升台：终极 → 祥云、天光
+
+## 敌人设计提示词结构
+
+差异化维度：轮廓 > 色彩 > 体型
+
+敌人族群：
+妖兽（野兽变异）、鬼物（亡灵）、魔物（深渊）、傀儡（机关）、邪修（人形）、古神卫（遗迹）、虫族（群体）、灵植（植物）、堕落法宝（器物）
+
+Boss 设计原则：独特轮廓 + 一个记忆点机制视觉标记
+
+## 法宝/功法/境界/宗门视觉语言
+
+| 系统 | 视觉语言 | 示例 |
+|------|----------|------|
+| 法宝 | icon/详情卡/实体预制体/idle动效/技能VFX/觉醒VFX 六件套 | 飞剑(细长/流光)、宝塔(层叠/镇压)、葫芦(圆润/吸纳) |
+| 功法 | 秘籍卷轴样式、修炼进度水墨渲染、突破光柱 | 境界文字浮现、祥云汇聚 |
+| 境界 | 炼气→筑基→金丹→元婴→化神→渡劫→大乘 递进 | 每个境界对应不同的光环/灵气颜色 |
+| 宗门 | 宗徽/旗帜/建筑风格/弟子服饰统一 | 剑宗(凌厉)、丹宗(温润)、阵宗(规整) |
+`,
+    },
+    {
+      filePath: 'docs/PROGRESSION_BALANCE_SPEC.md',
+      content: `# Progression Balance Spec — 修仙放置数值模型
+
+> 通用数值曲线、公平性检查、反 P2W 约束
+> 生成时间：${new Date().toISOString().split('T')[0]}
+
+## 核心设计原则
+
+1. 每个付费加速器必须有对应的非付费长线路径
+2. 付费节省时间，但不跳过策略
+3. 软上限和追赶机制防止鲸鱼跳过整个游戏循环
+4. 上线前用免费/微氪/重氪三档模拟测试
+
+## 境界成长曲线
+
+\`\`\`
+境界等级 n (1-based)
+修为需求: XP(n) = base * (growthFactor ^ (n-1))
+
+线性模式: XP(n) = base * (1 + (n-1) * growthFactor)  -- 稳定增长
+指数模式: XP(n) = base * (growthFactor ^ (n-1))     -- 后期巨大
+对数模式: XP(n) = base * log(n + 1) * growthFactor   -- 趋缓
+分段模式: 前 M 境线性 + 后 N 境指数                  -- 前后分明
+\`\`\`
+
+## 修为产出曲线（在线 + 离线双轨）
+
+\`\`\`
+在线收益: onlineRate(n) = baseOnlineRate * (1 + level * onlineBonusFactor)
+离线收益: offlineRate(n) = onlineRate(n) * offlineEfficiency
+  其中 offlineEfficiency = max(0.3, 1.0 - decayFactor * hoursOffline)
+\`\`\`
+
+## 突破消耗与风险
+
+\`\`\`
+突破消耗: cost(n) = baseCost * (riskFactor ^ (n-1))
+突破成功率: successRate(n) = max(minRate, 1.0 - (n-1) * failIncrement)
+失败惩罚: 消耗材料、修为回退、冷却时间（可选）
+\`\`\`
+
+## 掉落概率曲线
+
+\`\`\`
+稀有度 r (0=普通, 4=传说)
+基础掉落率: dropRate(r) = baseDropRate * (rarityDecay ^ r)
+保底机制: 连续 N 次未出 → 第 N+1 次必出（pity timer）
+\`\`\`
+
+## 战力成长曲线
+
+\`\`\`
+战力公式: power = ATK * (1 + critRate * critMultiplier) * (1 + elementBonus) * HP^0.5
+成长曲线: power(level) = basePower * (growthRate ^ (level-1)) * equipmentMultiplier
+\`\`\`
+
+## 离线收益衰减
+
+\`\`\`
+离线收益 = onlineRatePerSecond * offlineSeconds * decayFactor
+
+decayFactor:
+  t <= 1h  : 1.0
+  1h < t <= 4h  : 1.0 - (t-1h) * 0.05
+  4h < t <= 12h : 0.85 - (t-4h) * 0.025
+  t > 12h : 0.65
+\`\`\`
+
+## 免费/微氪/重氪模拟（时间等价换算）
+
+\`\`\`
+免费玩家 (F2P):
+  日在线 3h, 日修为产出 = 3 * onlineRate + 21 * offlineRate
+  达到第 N 境时间: XP(n) / dailyXP
+
+微氪玩家 (Dolphin):
+  日在线 3h, 修为加成 +50%, 日修为产出 = (3 * onlineRate * 1.5) + (21 * offlineRate * 1.2)
+  达到第 N 境时间: XP(n) / dailyDolphinXP
+
+重氪玩家 (Whale):
+  日在线 5h, 修为加成 +300%, 跳过低级突破冷却
+  达到第 N 境时间: XP(n) / dailyWhaleXP
+
+公平性指标:
+  Whale / F2P 时间比 = T_whale / T_f2p （建议 ≥ 0.3）
+  Dolphin / F2P 时间比 = T_dolphin / T_f2p （建议 ≥ 0.6）
+\`\`\`
+
+## 公平性检查
+
+- [ ] 核心战力组件是否可通过免费途径获取？
+- [ ] 付费专属内容是否仅限于外观/便捷/收藏？
+- [ ] PvP 中是否存在付费玩家碾压免费玩家的数值鸿沟？
+- [ ] 是否存在"不付费无法推进"的硬性门槛？
+- [ ] 限时活动奖励是否对所有活跃玩家可达？
+
+## P2W 风险提示
+
+| 风险项 | 严重程度 | 缓解措施 |
+|--------|----------|----------|
+| 付费专属数值道具 | 高 | 所有数值道具设免费获取路径（时间长但可达） |
+| 限时付费独占内容 | 高 | 活动结束后加入常驻兑换 |
+| 付费加速突破 | 中 | 设软上限，付费仅节省等待时间 |
+| VIP 等级战力加成 | 高 | 改为外观/便捷特权 |
+| 抽卡无保底 | 中 | 设 pity timer 保证期望值 |
+| 新服付费玩家快速拉开差距 | 中 | 设赛季追赶机制 |
 `,
     },
   ];

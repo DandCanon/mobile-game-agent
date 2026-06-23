@@ -48,13 +48,13 @@ const DEFAULT_ART_DIRECTION: ArtDirectionStylePackage = {
     requiredComponents: [
       'icon',
       'detailCard',
-      'entityPrefab',
+      'entityengine template',
       'idleMotion',
       'skillVFX',
       'awakenVFX',
     ],
     description:
-      '法宝/灵宝需要视觉四件套：图标(icon) → 详情卡片(detailCard) → 实体预制体(entityPrefab) → 待机动效(idleMotion) → 技能特效(skillVFX) → 觉醒特效(awakenVFX)。',
+      '法宝/灵宝需要视觉四件套：图标(icon) → 详情卡片(detailCard) → 实体预制体(entityengine template) → 待机动效(idleMotion) → 技能特效(skillVFX) → 觉醒特效(awakenVFX)。',
   },
   combatVfxPipeline: {
     stages: [
@@ -188,7 +188,7 @@ export function generateArtDirection(
 本文档定义了修仙手游的美术方向指南，基于项目内通用设计启发式生成，不包含第三方原始素材、素材路径、反编译数据或私有参考数据。
 
 严格禁止：
-- 不复制第三方原始贴图、Spine、Prefab、Lua 字节或素材路径
+- 不复制第三方原始贴图、Spine、engine template、runtime script 字节或素材路径
 - 不反编译或还原第三方商业数值
 - 不把低清预览图或可识别素材定位信息写入模板
 - 仅使用项目自有或公开安全的结构、命名、制作管线和设计原则
@@ -262,7 +262,7 @@ ${sceneList}
 |----|------|------|
 | Window | 全屏窗口预制体 | 商城窗口、背包窗口 |
 | WindowAssets | 窗口专属资源（图集/背景） | 窗口背景 1024x2048 |
-| CommonPrefab | 可复用 UI 控件 | 物品图标、列表单元格、通用按钮 |
+| Commonengine template | 可复用 UI 控件 | 物品图标、列表单元格、通用按钮 |
 | Effects | UI 特效预制体 | 掉落光柱、稀有度边框、升级粒子 |
 
 ## 7. 反模式清单

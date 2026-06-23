@@ -1,0 +1,78 @@
+[
+  {
+    "type": "public-engine-heuristic",
+    "title": "Unity Android host lifecycle checklist",
+    "tags": ["unity", "android", "mobile-game", "sdk", "lifecycle", "manifest"],
+    "summary": "A production Unity Android game usually needs a thin native host layer around UnityPlayerActivity. The host layer should manage Application initialization, Activity lifecycle forwarding, permissions, SDK initialization, intent callbacks, push notifications, payments, ads, analytics, crash reporting, and file providers.",
+    "designRules": [
+      "Keep Unity gameplay code separate from Android SDK integration code.",
+      "Use a single UnityHostActivity or generated Activity wrapper as the main lifecycle bridge.",
+      "Forward onCreate, onResume, onPause, onDestroy, onNewIntent, onActivityResult, and permission callbacks into registered SDK adapters.",
+      "Initialize crash reporting, analytics, push, ads, and payment SDKs through explicit adapters rather than scattered Activity code.",
+      "Generate an AndroidManifest checklist with activities, services, receivers, providers, metadata, permissions, orientation, configChanges, and export flags.",
+      "Expose a small Unity bridge API for native-to-Unity messages instead of coupling SDK callbacks directly to gameplay systems.",
+      "Include debug logging hooks for SDK initialization order, callback routing, permission results, and failed intents."
+    ],
+    "mgaiUsage": "When generating Unity mobile projects, create docs/ANDROID_SDK_INTEGRATION.md and a UnityHostAdapter design that lists lifecycle callbacks, SDK adapters, Manifest requirements, debug logs, and validation commands.",
+    "sourcePolicy": "Public-safe generalized heuristic. Contains no proprietary class names, decompiled code, secrets, or app-specific metadata.",
+    "confidence": 0.8
+  },
+  {
+    "type": "public-engine-heuristic",
+    "title": "SDK Adapter contract for Unity mobile games",
+    "tags": ["unity", "android", "sdk-adapter", "payment", "ads", "analytics", "push", "debug"],
+    "summary": "SDK integrations should be modeled as adapters with stable lifecycle hooks and callback contracts. This keeps generated games testable and prevents payment, ads, push, analytics, and crash SDK logic from leaking into gameplay code.",
+    "adapterContract": {
+      "name": "SdkAdapter",
+      "hooks": [
+        "init(application, activity)",
+        "onActivityCreate(bundle)",
+        "onResume()",
+        "onPause()",
+        "onDestroy()",
+        "onNewIntent(intent)",
+        "onActivityResult(requestCode, resultCode, data)",
+        "onRequestPermissionsResult(requestCode, permissions, grantResults)"
+      ],
+      "optionalCapabilities": [
+        "login",
+        "logout",
+        "pay",
+        "showRewardedAd",
+        "trackEvent",
+        "registerPush",
+        "openCustomerService",
+        "collectBugBundle"
+      ]
+    },
+    "designRules": [
+      "Each SDK adapter must declare required Manifest entries and permissions.",
+      "Adapters should log initialization status and callback failures.",
+      "Payment and login callbacks must be idempotent and routed through a single result dispatcher.",
+      "Ads and analytics should be optional modules, not hard dependencies of the game loop.",
+      "Generated docs should tell the developer which SDK values are placeholders and must be configured outside source control."
+    ],
+    "mgaiUsage": "Use this contract when adding Unity Android SDK integration scaffolds or Device Debug Agent support.",
+    "sourcePolicy": "Public-safe generalized architecture pattern. Do not include proprietary SDK secrets or decompiled implementation details.",
+    "confidence": 0.85
+  },
+  {
+    "type": "public-engine-heuristic",
+    "title": "Unity Android Manifest validation checklist",
+    "tags": ["unity", "android", "manifest", "reflector", "validation", "rule-check"],
+    "summary": "Rule-based validation can catch many Unity Android packaging problems before device testing: missing Activity metadata, bad export flags, missing providers, unsafe permissions, missing configChanges, or incomplete SDK declarations.",
+    "ruleChecks": [
+      "Main Activity exists and has unityplayer.UnityActivity metadata when using UnityPlayerActivity.",
+      "screenOrientation and configChanges match the target game orientation.",
+      "android:exported is explicit for components with intent filters.",
+      "FileProvider authorities are unique and match package name.",
+      "Required providers for share, ads, push, and payment SDKs are declared only when corresponding SDK adapters are enabled.",
+      "Sensitive permissions are documented with reason and user-facing flow.",
+      "Crash reporting and analytics metadata are placeholders in templates and must not contain production secrets.",
+      "Android build docs include device smoke tests: install, launch, logcat, screenshot, and callback checks."
+    ],
+    "mgaiUsage": "Add these checks to Hybrid Reflector / Device Debug Agent when generating Android builds for Unity or Capacitor projects.",
+    "sourcePolicy": "Public-safe generalized validation checklist.",
+    "confidence": 0.8
+  }
+]

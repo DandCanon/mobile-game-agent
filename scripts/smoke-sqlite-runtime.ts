@@ -6,7 +6,7 @@
  *
  * 运行方式：
  *   npx tsx scripts/smoke-sqlite-runtime.ts
- *   npx tsx scripts/smoke-sqlite-runtime.ts D:\Marvis\手游AI开发Agent
+ *   npx tsx scripts/smoke-sqlite-runtime.ts D:\path\to\mobile-game-agent
  */
 
 import { tryLoadBetterSqlite3 } from '../orchestration/native-loader.js';

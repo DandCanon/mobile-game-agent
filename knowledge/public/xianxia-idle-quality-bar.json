@@ -1,0 +1,93 @@
+{
+  "packId": "public-xianxia-idle-quality-bar",
+  "sourcePolicy": "Public-safe generalized design heuristic. Contains no extracted assets, proprietary names, package identifiers, resource paths, copied numeric tables, screenshots, or private reports.",
+  "cards": [
+    {
+      "id": "public-xianxia-idle-quality-bar",
+      "type": "public-design-heuristic",
+      "title": "Xianxia Idle Game Quality Bar",
+      "tags": [
+        "xianxia",
+        "idle",
+        "rpg",
+        "ui",
+        "art-direction",
+        "progression",
+        "monetization",
+        "anti-pay-to-win"
+      ],
+      "summary": "A xianxia idle game should feel elegant, readable, and emotionally aspirational rather than noisy, extractive, or overloaded with reward popups.",
+      "designPrinciples": [
+        "Make cultivation fantasy the emotional core: quiet growth, breakthroughs, sect identity, artifacts, companions, realms, and dao choices.",
+        "Use monetization as optional acceleration, cosmetics, convenience, or collection expansion; avoid making direct power purchase the primary progression path.",
+        "Keep the base UI calm and legible. Reserve spectacle for breakthrough, rare loot, boss victory, new realm unlock, and story milestone moments.",
+        "Use layered xianxia visual language: ink, jade, metal, silk, mist, talisman paper, clouds, star charts, formation diagrams, alchemy fire, and artifact light.",
+        "Avoid a one-note palette. Pair restrained neutrals with meaningful accent colors for realm, element, rarity, faction, and danger states.",
+        "Separate gameplay clarity from decorative flourish. Numbers, timers, costs, and rewards must be readable before ornament is added.",
+        "Design every major system with a fantasy-facing name and a mechanics-facing model so the agent can generate both flavor and implementation."
+      ],
+      "uiRules": [
+        "Use a stable mobile shell: top status strip, central activity/workspace, bottom navigation, contextual side actions, and modal panels only for focused decisions.",
+        "Limit simultaneous red-dot, reward, sale, and claim prompts. If more than three compete for attention, group them into a daily agenda panel.",
+        "Reward reveal screens should have three intensity levels: common claim, rare acquisition, and milestone ceremony.",
+        "Panels should use compact hierarchy: title, key stat delta, required resource, action button, secondary details. Avoid dense grids without filters or grouping.",
+        "Use motion to clarify state changes: resource gain, realm progress, breakthrough readiness, item upgrade, and failed requirement. Do not animate every decorative element."
+      ],
+      "characterArtRules": [
+        "Generate characters as modular briefs: silhouette, robe/body layer, hair, face, weapon or artifact, aura, element motif, rarity treatment, and low-detail mobile fallback.",
+        "Differentiate role archetypes by silhouette and posture before color: sword cultivator, body refiner, talisman user, alchemist, formation master, beast tamer, demon path, and orthodox sect elder.",
+        "Paid cosmetics should change fantasy identity and presentation, not only add glow. Use garment structure, material, hair, accessory, aura, and stance changes.",
+        "Do not use reference-specific names, costume shapes, or identifiable motifs from private material. Create original faction and realm motifs for the target project."
+      ],
+      "sceneArtRules": [
+        "Build scenes in layers: base environment, foreground frame, midground action space, background atmosphere, weather/fog, and UI-safe zones.",
+        "Use location identity to support progression: village, sect gate, cave dwelling, market, forbidden land, ancient battlefield, spirit mine, alchemy room, tower, secret realm, ascension platform.",
+        "For idle play, scenes should loop quietly and support long viewing sessions. Prefer subtle clouds, water, particles, banners, and lighting shifts over constant high-energy effects.",
+        "Major milestone scenes may use cinematic framing, but routine screens should remain fast, readable, and lightweight."
+      ],
+      "enemyArtRules": [
+        "Enemy design should communicate region, threat tier, element, attack range, and reward type through silhouette and color accents.",
+        "Use readable families: beasts, ghosts, demons, puppets, rogue cultivators, ancient guardians, insects, plants, and corrupted artifacts.",
+        "Bosses need a unique silhouette plus one memorable mechanic-facing visual motif. Avoid making every boss a glow-heavy variant of the same body."
+      ],
+      "progressionRules": [
+        "Model progression with named curves instead of copied values: realm growth, resource income, upgrade cost, battle power, drop chance, idle yield, and breakthrough risk.",
+        "Use soft caps, catch-up mechanics, and milestone unlocks to prevent whales from skipping the entire game loop.",
+        "Every paid accelerator should have a non-paid long-run path. Paid routes may save time or improve convenience, but should not invalidate strategy.",
+        "Balance should be tested with simulations for free, light-spender, and heavy-spender profiles before content is shipped."
+      ],
+      "mgaiUsage": "When generating a xianxia idle game plan, mgai should include a UI quality checklist, art direction brief, modular character prompt schema, scene prompt schema, enemy prompt schema, monetization fairness guardrails, and progression simulation tasks.",
+      "schemas": {
+        "XianxiaCharacterBrief": {
+          "roleArchetype": "string",
+          "silhouette": "string",
+          "robeLayer": "string",
+          "hairAndFace": "string",
+          "artifactOrWeapon": "string",
+          "auraMotif": "string",
+          "elementMotif": "string",
+          "rarityTreatment": "subtle | ceremonial | legendary",
+          "mobileFallback": "string"
+        },
+        "XianxiaSceneBrief": {
+          "locationType": "string",
+          "progressionMeaning": "string",
+          "composition": "string",
+          "uiSafeZones": "string",
+          "motionLayers": "string[]",
+          "palette": "string",
+          "antiClutterNotes": "string[]"
+        },
+        "ProgressionFairnessCheck": {
+          "freePlayerPath": "string",
+          "lightSpenderPath": "string",
+          "heavySpenderRisk": "string",
+          "softCaps": "string[]",
+          "catchUpMechanics": "string[]",
+          "payToWinWarnings": "string[]"
+        }
+      },
+      "confidence": 0.88
+    }
+  ]
+}

@@ -13,8 +13,8 @@ const privatePackageMarker = ['xian', 'M161573'].join('_');
 const privatePackageFamilyMarker = ['xian', 'M'].join('_');
 const blockedReverseAnalysis = ['reverse', 'analysis'].join('-');
 const blockedSpriteSheetToken = ['Sprite', 'Atlas'].join('');
-const blockedPrefab = ['Pre', 'fab'].join('');
-const blockedLua = ['L', 'ua'].join('');
+const blockedEngineTemplate = ['Pre', 'fab'].join('');
+const blockedRuntimeScript = ['L', 'ua'].join('');
 const blockedDistill = ['di', 'still'].join('');
 const blockedInstallPackageExt = ['.', 'a', 'pk'].join('');
 
@@ -25,8 +25,8 @@ const PRIVATE_MARKERS = [
   ['di', 'stillation'].join(''),
   blockedReverseAnalysis,
   blockedSpriteSheetToken,
-  blockedPrefab,
-  blockedLua,
+  blockedEngineTemplate,
+  blockedRuntimeScript,
   blockedInstallPackageExt,
   '.sqlite',
   ['蒸', '馏'].join(''),
@@ -111,14 +111,14 @@ describe('layered knowledge recall', () => {
     resetKnowledgeRecallCache();
 
     const result = recallKnowledgeCards(
-      `${privatePackageMarker} ${blockedPrefab} ${blockedLua} ${blockedDistill}`,
+      `${privatePackageMarker} ${blockedEngineTemplate} ${blockedRuntimeScript} ${blockedDistill}`,
       5,
     );
     const serialized = JSON.stringify(result);
 
     expect(serialized).not.toContain(privatePackageMarker);
-    expect(serialized).not.toContain(blockedPrefab);
-    expect(serialized).not.toContain(blockedLua);
+    expect(serialized).not.toContain(blockedEngineTemplate);
+    expect(serialized).not.toContain(blockedRuntimeScript);
     expect(serialized).not.toContain(blockedDistill);
   });
 });

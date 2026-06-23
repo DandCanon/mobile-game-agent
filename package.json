@@ -1,7 +1,7 @@
 {
   "name": "mobile-game-ai-agent",
-  "version": "0.8.0",
-  "description": "手游AI开发Agent — 从需求到可玩游戏的全自动管线",
+  "version": "0.9.0",
+  "description": "Local MCP agent for mobile game planning, scaffolding, knowledge retrieval, and debug workflows.",
   "type": "module",
   "main": "./orchestration/gateway.js",
   "bin": {

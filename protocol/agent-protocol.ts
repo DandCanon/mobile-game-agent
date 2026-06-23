@@ -123,6 +123,22 @@ export interface ExecutionPlan {
   artDirectionPath?: string;
   /** 知识卡召回结果（压缩 prompt，由 Knowledge Recall 注入） */
   knowledgeCards?: string;
+  /** Android SDK 集成文档路径（Unity + Android 平台自动生成） */
+  androidSdkIntegrationPath?: string;
+  /** 数值规格文档路径（修仙 + 放置品类自动生成 PROGRESSION_BALANCE_SPEC.md） */
+  progressionSpecPath?: string;
+}
+
+/** Android SDK 集成配置（Unity + Android 平台） */
+export interface AndroidSdkIntegrationConfig {
+  /** 目标包名（占位符，不含真实值） */
+  packageName: string;
+  /** 最低 SDK 版本 */
+  minSdkVersion: number;
+  /** 目标 SDK 版本 */
+  targetSdkVersion: number;
+  /** 目标屏幕方向 */
+  screenOrientation: 'portrait' | 'landscape' | 'sensorLandscape' | 'sensorPortrait' | 'fullSensor';
 }
 
 /** 单个步骤定义 */

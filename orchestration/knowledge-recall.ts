@@ -83,6 +83,90 @@ const XIANXIA_KEYWORDS = [
   'RPG',
 ];
 
+/** Unity 手游工程关键词：覆盖引擎、管线、调试等领域 */
+const UNITY_MOBILE_KEYWORDS = [
+  'unity',
+  'Unity',
+  'UNITY',
+  'runtime-script',
+  'runtime script',
+  'IL2CPP',
+  'il2cpp',
+  'content bundle',
+  'content-bundle',
+  'Manager',
+  'manager',
+  'SDK',
+  'sdk',
+  'Android',
+  'android',
+  '真机',
+  '调试',
+  'logcat',
+  'ADB',
+  'adb',
+  '热更新',
+  '热更',
+  'Android install package',
+  'android-package',
+  '上架',
+  '渠道包',
+  '包体',
+  'CDN',
+  'cdn',
+  '资源管线',
+  '分包',
+  'Manifest',
+  'manifest',
+];
+
+/** 数值设计关键词：覆盖修仙放置数值系统 */
+const NUMERICS_KEYWORDS = [
+  '数值',
+  '数值模型',
+  '数值设计',
+  '数值平衡',
+  '成长曲线',
+  '经验曲线',
+  '战力',
+  '境界',
+  '突破',
+  '掉落',
+  '掉落率',
+  '概率',
+  '保底',
+  '离线收益',
+  '挂机收益',
+  '免费玩家',
+  '付费',
+  '氪金',
+  'P2W',
+  'p2w',
+  '公平性',
+  '平衡性',
+  '修为',
+  '修炼',
+];
+
+/** 修仙审美关键词：覆盖美术、反模式、设计质量 */
+const AESTHETICS_KEYWORDS = [
+  '审美',
+  '美术方向',
+  '美术风格',
+  'UI质量',
+  '配色',
+  '角色设计',
+  '场景设计',
+  '敌人设计',
+  '剪影',
+  '稀有度表达',
+  '土俗',
+  '过度发光',
+  '信息噪音',
+  '页游风',
+  '反模式',
+];
+
 const blockedPublicTerms = [
   ['a', 'pk'].join(''),
   ['di', 'still'].join(''),
@@ -107,9 +191,9 @@ const PUBLIC_BLOCKED_TEXT_PATTERNS: RegExp[] = [
   new RegExp(`\\b[\\w.-]+\\.${androidPackageExt}\\b`, 'i'),
   new RegExp(`\\b(?:${blockedPublicTerms.join('|')})\\b`, 'i'),
   new RegExp(blockedPublicCjkTerms.join('|')),
-  /\b[\w.-]+\.(?:png|jpe?g|webp|gif|atlas|prefab|lua|bytes|asset|csv|xlsx)\b/i,
-  /\b(?:assets?|resources?|res|prefabs?|textures?|sprites?|lua|tables?)[\\/][\w.-]+/i,
-  /\b\d+\s*(?:assets?|resources?|files?|sprites?|prefabs?|lua|tables?|images?)\b/i,
+  /\b[\w.-]+\.(?:png|jpe?g|webp|gif|atlas|engineTemplate|runtime-script|bytes|asset|csv|xlsx)\b/i,
+  /\b(?:assets?|resources?|res|engineTemplates?|textures?|sprites?|runtime-script|tables?)[\\/][\w.-]+/i,
+  /\b\d+\s*(?:assets?|resources?|files?|sprites?|engineTemplates?|runtime-script|tables?|images?)\b/i,
 ];
 
 let cardCache: KnowledgeCard[] | null = null;
@@ -259,8 +343,29 @@ export function recallKnowledgeCards(
 
   const cards = loadAllCards();
   const queryTokens = tokenize(userQuery);
+
+  // 扩展查询 Tokens：加入领域关键词表中命中的词
+  const expandedTokens = new Set(queryTokens);
+  for (const kw of UNITY_MOBILE_KEYWORDS) {
+    if (userQuery.toLowerCase().includes(kw.toLowerCase())) {
+      expandedTokens.add(kw.toLowerCase());
+    }
+  }
+  for (const kw of NUMERICS_KEYWORDS) {
+    if (userQuery.includes(kw)) {
+      expandedTokens.add(kw.toLowerCase());
+    }
+  }
+  for (const kw of AESTHETICS_KEYWORDS) {
+    if (userQuery.includes(kw)) {
+      expandedTokens.add(kw.toLowerCase());
+    }
+  }
+
+  const allTokens = [...expandedTokens];
+
   const scored = cards
-    .map((card) => ({ card, score: scoreCard(card, userQuery, queryTokens) }))
+    .map((card) => ({ card, score: scoreCard(card, userQuery, allTokens) }))
     .filter((entry) => entry.score > 0.2)
     .sort((a, b) => b.score - a.score || b.card.confidence - a.card.confidence)
     .slice(0, Math.min(maxCards, 5))
@@ -278,6 +383,27 @@ export function recallKnowledgeCards(
 
 export function isXianxiaRelated(query: string): boolean {
   return XIANXIA_KEYWORDS.some((kw) => query.includes(kw));
+}
+
+/**
+ * 检查查询是否与 Unity 手游工程相关
+ */
+export function isUnityMobileRelated(query: string): boolean {
+  return UNITY_MOBILE_KEYWORDS.some((kw) => query.toLowerCase().includes(kw.toLowerCase()));
+}
+
+/**
+ * 检查查询是否与数值设计相关
+ */
+export function isNumericsRelated(query: string): boolean {
+  return NUMERICS_KEYWORDS.some((kw) => query.includes(kw));
+}
+
+/**
+ * 检查查询是否与修仙审美相关
+ */
+export function isAestheticsRelated(query: string): boolean {
+  return AESTHETICS_KEYWORDS.some((kw) => query.includes(kw));
 }
 
 export function resetKnowledgeRecallCache(): void {

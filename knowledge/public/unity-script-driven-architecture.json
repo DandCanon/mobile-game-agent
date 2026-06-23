@@ -1,0 +1,50 @@
+[
+  {
+    "type": "public-engine-heuristic",
+    "title": "Unity C# Core + runtime script Gameplay/UI layered architecture",
+    "tags": ["unity", "il2cpp", "runtime-script", "architecture", "hot-update", "manager", "mobile-game"],
+    "summary": "A widely adopted architecture in IL2CPP-based Unity mobile games splits the engine into a thin C# native core (providing engine-level managers) and a runtime script scripting layer (handling gameplay logic and UI). The C# core exposes managers through a C#-to-runtime script bridge, while runtime script scripts can be hot-updated without rebuilding the native binary. This separation enables rapid iteration, reduces App Store review friction, and keeps native code minimal.",
+    "designRules": [
+      "Keep the C# core strictly limited to engine-level services: resource loading, UI framework, audio, input, platform SDK bridging, and performance-critical systems.",
+      "The runtime script layer should own all gameplay logic, UI flow, data models, event routing, and configuration-driven behavior.",
+      "Expose C# manager APIs to runtime script through a thin, stable bridge — never let runtime script directly access UnityEngine internals.",
+      "All manager singletons should be lazily initialized and support explicit teardown for scene transitions.",
+      "Prefer event-driven decoupling between managers; avoid direct cross-manager references in runtime script.",
+      "The runtime script VM should be initialized early in the native startup sequence, before any gameplay code runs.",
+      "runtime script hot-update must be atomic: download full runtime script bundle, verify integrity, swap the VM state, and rollback on failure."
+    ],
+    "managerArchitecture": {
+      "ResourceManager": {
+        "responsibilities": "Abstract resource loading pipeline: synchronous/asynchronous load, reference counting, LRU-based or priority-based cache eviction, scene preloading, and per-bundle dependency resolution. Never exposes raw content bundle handles to runtime script — only logical asset paths.",
+        "lifecycle": "Initialize at engine startup; load and cache commonly used assets; release unused assets on level transitions or low-memory warnings; flush on shutdown."
+      },
+      "UIManager": {
+        "responsibilities": "Maintains a UI window stack (push/pop/replace semantics). Owns panel lifecycle states: preload, show, hide, pause, resume, close, destroy. Manages canvas layer ordering (background, normal, popup, toast, loading, top-most). Handles safe-area adaptation and resolution scaling.",
+        "lifecycle": "Ready after ResourceManager; panels register their engineTemplate references and runtime script controller bindings; stack operations trigger corresponding lifecycle callbacks on the active panel."
+      },
+      "runtime scriptManager": {
+        "responsibilities": "Initialize and manage the runtime script VM instance. Provide C# to runtime script type binding and call marshaling. Handle runtime script script hot-update: unpack downloaded runtime script bytecode or source, verify checksum, reload VM state or restart safely. Expose unified error handling and stack trace formatting.",
+        "lifecycle": "Initialized early in the boot sequence; hot-update check runs before any runtime script gameplay code executes; VM restart is isolated and must not crash the native host."
+      },
+      "EventManager": {
+        "responsibilities": "Provide a global publish/subscribe event bus decoupling runtime script modules and C# managers. Support event namespacing, priority sorting, one-shot listeners, and batched event flushing per frame. Prevent cross-module reference cycles.",
+        "lifecycle": "Available as soon as the engine core boots; listeners are registered during module initialization and cleaned up on module teardown."
+      },
+      "AudioManager": {
+        "responsibilities": "Manage background music, sound effects, and voice-over playback. Support volume grouping (master, BGM, SFX, voice) with smooth crossfade. Handle audio source pooling, 3D positional audio, and platform mute/ducking behaviors (phone call, notification).",
+        "lifecycle": "Initialize after ResourceManager loads audio banks; responds to system audio focus changes; releases pooled sources on scene unload."
+      },
+      "UpdateManager": {
+        "responsibilities": "Unified driver for per-frame logic: route Update, LateUpdate, FixedUpdate, and OnGUI calls to registered handlers. Support priority ordering and conditional pausing per handler group. Avoid scattered MonoBehaviour.Update() calls across the project.",
+        "lifecycle": "Active across the entire application lifecycle; handlers register/unregister dynamically; pauses during loading screens or system dialogs."
+      },
+      "SDKAdapter": {
+        "responsibilities": "Abstract platform-specific SDK integrations (login, payment, push, analytics, ads, sharing) behind a uniform C# interface. Buffer native-to-Unity callbacks on the main thread. Provide feature-detection flags so runtime script code can query SDK availability at runtime.",
+        "lifecycle": "Initialized per-platform in the native host Activity/Application; adapters register with a central dispatcher; callbacks are serialized onto the Unity main thread via a thread-safe queue."
+      }
+    },
+    "mgaiUsage": "When scaffolding a new Unity mobile project with hot-update capability, generate a MANAGER_ARCHITECTURE.md listing these managers with their responsibilities and lifecycle. Also sketch a codegen template for the C#-to-runtime script bridge to ensure consistent manager API exposure.",
+    "sourcePolicy": "Public-safe generalized architecture pattern derived from community knowledge of IL2CPP + runtime script mobile game engineering. No proprietary class names, decompiled code, or app-specific metadata.",
+    "confidence": 0.85
+  }
+]

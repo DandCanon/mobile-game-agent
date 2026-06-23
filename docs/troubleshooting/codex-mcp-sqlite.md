@@ -50,7 +50,7 @@ mgai MCP 异常
 node --input-type=commonjs -e "require('better-sqlite3'); console.log('OK')"
 
 # 或在项目外执行（无 package.json type 影响）
-cd C:\ && node -e "require('D:\\Marvis\\手游AI开发Agent\\node_modules\\better-sqlite3'); console.log('OK')"
+cd C:\ && node -e "require('D:\\path\\to\\mobile-game-agent\\node_modules\\better-sqlite3'); console.log('OK')"
 ```
 
 如果上述命令成功但 mgai 仍 degraded，基本可确定是 ESM require 问题。

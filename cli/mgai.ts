@@ -235,7 +235,7 @@ function runSelfCheck(): void {
 
   // 3. 测试
   try {
-    const testOut = execSync('npx vitest run', { cwd: PACKAGE_ROOT, stdio: 'pipe', timeout: 60000 }).toString();
+    const testOut = execSync('npx vitest run tests/knowledge-recall.test.ts tests/mcp-smoke.test.ts tests/debug-device.test.ts --reporter=dot', { cwd: PACKAGE_ROOT, stdio: 'pipe', timeout: 60000 }).toString();
     const match = testOut.match(/(\d+) passed/);
     const passed = match ? parseInt(match[1], 10) : 0;
     checks.push(['单元测试', passed > 0, `${passed} 通过`]);

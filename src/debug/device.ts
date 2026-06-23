@@ -81,7 +81,7 @@ export abstract class DeviceController {
   abstract runCommand(deviceId: string, command: string): CommandResult;
 
   /** 安装 Android 应用包 */
-  abstract installApk(deviceId: string, apkPath: string): InstallResult;
+  abstract installApk(deviceId: string, androidPackagePath: string): InstallResult;
 
   /** 卸载应用 */
   abstract uninstallApp(deviceId: string, packageName: string): UninstallResult;
@@ -221,13 +221,13 @@ export class ADBController extends DeviceController {
     return adbExecFull(['-s', deviceId, 'shell', command]);
   }
 
-  installApk(deviceId: string, apkPath: string): InstallResult {
+  installApk(deviceId: string, androidPackagePath: string): InstallResult {
     const result = adbExecFull([
       '-s',
       deviceId,
       'install',
       '-r',
-      `"${apkPath}"`,
+      `"${androidPackagePath}"`,
     ]);
     const output = result.stdout + result.stderr;
     const success = output.includes('Success');
@@ -381,8 +381,8 @@ export class MockDeviceController extends DeviceController {
     };
   }
 
-  installApk(deviceId: string, apkPath: string): InstallResult {
-    const pkgName = path.basename(apkPath, path.extname(apkPath));
+  installApk(deviceId: string, androidPackagePath: string): InstallResult {
+    const pkgName = path.basename(androidPackagePath, path.extname(androidPackagePath));
     return {
       success: true,
       packageName: `com.mock.${pkgName}`,

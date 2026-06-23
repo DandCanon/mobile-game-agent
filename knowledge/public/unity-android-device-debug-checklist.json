@@ -1,0 +1,118 @@
+[
+  {
+    "type": "public-engine-heuristic",
+    "title": "Unity Android device debug checklist",
+    "tags": ["unity", "android", "debug", "adb", "checklist", "logcat", "device-testing", "troubleshooting"],
+    "summary": "A structured debugging checklist for Unity mobile games running on Android devices. Covers Manifest validation, startup lifecycle inspection, SDK initialization ordering, log filtering via adb logcat, resource loading failures, runtime script or script-level error tracing, and network/CDN diagnostics. Includes adb command recipes for real-time monitoring, crash dump collection, and system state inspection.",
+    "checklist": {
+      "manifestChecks": {
+        "description": "Validate that the merged AndroidManifest contains correct declarations before installing on device.",
+        "items": [
+          "Main Activity is declared with correct intent-filter for LAUNCHER.",
+          "All Activity, Service, BroadcastReceiver, and ContentProvider components using intent-filters have explicit android:exported set.",
+          "Required permissions (INTERNET, ACCESS_NETWORK_STATE, etc.) are declared and match SDK adapter requirements.",
+          "Application node includes correct theme, hardwareAccelerated=true, and allowBackup policy.",
+          "FileProvider authority string is unique and does not collide with other apps.",
+          "No debug-only permissions or metadata are leaking into release builds."
+        ],
+        "adbCommands": [
+          "adb shell dumpsys package <package-name> | grep -A 50 'AndroidManifest' — dump parsed manifest from device.",
+          "aapt dump badging <android-package-path> — inspect Manifest declarations from Android install package file."
+        ]
+      },
+      "startupChecks": {
+        "description": "Verify that the application starts cleanly and reaches the first interactive frame without crashes, ANRs, or long black screens.",
+        "items": [
+          "Application.onCreate() completes within recommended time budget (typically under 5 seconds) to avoid ANR.",
+          "Main Activity onCreate → onStart → onResume sequence fires without exceptions.",
+          "Unity splash screen or custom splash transitions to gameplay scene within acceptable cold-start duration.",
+          "No StrictMode violations (disk reads, network calls) on the main thread during startup.",
+          "First-frame callbacks for analytics or crash reporting fire after initialization completes, not before."
+        ],
+        "adbCommands": [
+          "adb logcat -s Unity:V — monitor Unity log output during app launch.",
+          "adb logcat -b events -s am_anr:V — filter ANR events.",
+          "adb shell am start -W <package-name>/<activity> — measure cold-start time with WaitTime."
+        ]
+      },
+      "sdkInitializationChecks": {
+        "description": "Ensure all integrated SDK adapters initialize in the correct order and without blocking the game loop.",
+        "items": [
+          "Crash reporting SDK initializes first, before any other SDK, to capture early failures.",
+          "Analytics SDK initializes early but after crash reporting.",
+          "Login/account SDK initializes before any SDK requiring user identity.",
+          "Push notification SDK registers after login (user-scoped registration).",
+          "Payment SDK initializes lazily or after user authentication.",
+          "Ad SDK initializes after gameplay systems are ready; never blocks the loading screen.",
+          "Each SDK adapter logs init start and end with timing, so that initialization bottlenecks are visible in logcat."
+        ],
+        "adbCommands": [
+          "adb logcat -s Unity:V | grep -i 'sdk.*init' — filter SDK init log messages.",
+          "adb logcat -v threadtime — include timestamps for ordering analysis."
+        ]
+      },
+      "logChecks": {
+        "description": "Filter and interpret Unity and system logs to diagnose crashes, exceptions, and performance warnings.",
+        "items": [
+          "Use `adb logcat -s Unity:V` for Unity Debug.Log/Debug.LogError/Debug.LogWarning output.",
+          "Filter by tag: `-s tag:priority` (e.g., `-s AndroidRuntime:E` for Java exceptions, `-s libc:F` for native crashes).",
+          "Crash dumps appear in `adb logcat -b crash` or `adb bugreport` output.",
+          "ANR traces are available via `adb shell ls /data/anr/` and can be pulled with `adb pull`.",
+          "Native (il2cpp/libunity) crashes produce tombstone files accessible via `adb bugreport` or `/data/tombstones/`."
+        ],
+        "adbCommands": [
+          "adb logcat -c && adb logcat -s Unity:V > unity_log.txt — clear buffer then capture Unity logs to file.",
+          "adb logcat -d '*:E' — dump all error-level logs since last clear.",
+          "adb bugreport <output-dir> — capture full device diagnostic report including ANR traces and tombstones.",
+          "adb shell dumpsys meminfo <package-name> — inspect memory usage breakdown.",
+          "adb shell dumpsys gfxinfo <package-name> — inspect frame rendering stats."
+        ]
+      },
+      "resourceLoadingChecks": {
+        "description": "Diagnose content bundle or resource loading failures that manifest as missing meshes, pink materials, or null reference exceptions.",
+        "items": [
+          "Check logcat for content bundle load failure messages (hash mismatch, HTTP errors, decompression errors).",
+          "Verify that the remote resource version manifest was fetched successfully and parsed without exceptions.",
+          "Confirm that downloaded bundles pass integrity verification (hash comparison) before being accepted.",
+          "Missing assets often indicate broken dependency chains: check if shared-dependency bundles are loaded before the dependent bundle.",
+          "Null reference exceptions pointing to loaded engineTemplates suggest missing script references or stripped types in IL2CPP builds."
+        ],
+        "adbCommands": [
+          "adb logcat -s Unity:V | grep -iE 'content-bundle|load|fail|missing|hash|manifest' — filter resource-related log entries.",
+          "adb shell dumpsys package <package-name> | grep -A 5 'dataDir' — locate app data directory for inspecting cached bundles."
+        ]
+      },
+      "scriptErrorChecks": {
+        "description": "Trace runtime script or C# script-level errors including runtime exceptions, hot-update failures, and stack traces.",
+        "items": [
+          "runtime script runtime errors should print full stack traces with source file and line number, not just error messages.",
+          "Hot-update failure must log: which step failed (download, checksum, extraction, VM reload), error code, and whether rollback was triggered.",
+          "C# exceptions from the Unity engine should include the managed stack trace; check that the IL2CPP build preserves enough metadata for readable traces.",
+          "Null reference exceptions in runtime script-C# interop typically indicate that a C# object was garbage-collected while runtime script still holds a stale reference."
+        ],
+        "adbCommands": [
+          "adb logcat -s Unity:V | grep -iE 'runtime-script:|error|exception|stack trace|nullref' — filter script error logs.",
+          "adb logcat -d '*:E' | grep -A 20 'FATAL EXCEPTION' — extract Java-side crash with full stack."
+        ]
+      },
+      "networkAndCdnChecks": {
+        "description": "Diagnose network-related issues including resource download timeouts, SSL handshake failures, and CDN connectivity.",
+        "items": [
+          "content bundle download timeouts should log the CDN URL, retry count, and time elapsed.",
+          "SSL errors (certificate validation failures) on Android may indicate missing CA certificates in the device trust store or incorrect CDN certificate chain.",
+          "HTTP redirect loops or CDN misconfiguration appear as repeated 3xx responses in download logs.",
+          "Verify that the CDN base URL is reachable from the test device's network (corporate proxy, VPN, or firewall may block it).",
+          "Large resource downloads should support resumable transfers (HTTP Range requests) to handle unstable mobile networks."
+        ],
+        "adbCommands": [
+          "adb logcat -s Unity:V | grep -iE 'download|http|cdn|timeout|ssl|redirect|dns' — filter network-related logs.",
+          "adb shell ping -c 5 <cdn-host> — basic connectivity test from device.",
+          "adb shell curl -I <resource-url> — check HTTP response headers from CDN."
+        ]
+      }
+    },
+    "mgaiUsage": "When the Device Debug Agent (mgai_start_debug_session) is activated for a Unity Android build, load this checklist as the default triage framework. Prioritize manifest and startup checks first, then SDK init ordering, then category-specific checks based on the observed symptoms. Output findings grouped by checklist section with relevant adb command outputs pasted under each item.",
+    "sourcePolicy": "Public-safe generalized debugging methodology derived from community knowledge of Android adb tooling and Unity Android development. No proprietary package names, class names, decompiled code, or app-specific identifiers.",
+    "confidence": 0.85
+  }
+]

@@ -20,6 +20,96 @@ import type {
 } from './types';
 import { BASE_MOTION_TOKENS, DEFAULT_RARITY_SLOTS } from './types';
 import { generateArtDirection, getArtDirectionPackage } from './art-direction-generator';
+import { readFileSync, existsSync } from 'node:fs';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/* ===================== 修仙质量知识卡加载 ===================== */
+
+interface XianxiaQualityBar {
+  designPrinciples: string[];
+  uiRules: string[];
+  characterArtRules: string[];
+  sceneArtRules: string[];
+  enemyArtRules: string[];
+  progressionRules: string[];
+  schemas: Array<{ name: string; fields: string[] }>;
+  antiP2WRules?: string[];
+  antiGlowRules?: string[];
+  antiNoiseRules?: string[];
+}
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const XIANXIA_QUALITY_BAR_PATH = path.resolve(
+  __dirname,
+  '..',
+  '..',
+  'knowledge',
+  'public',
+  'xianxia-idle-quality-bar.json',
+);
+
+function loadXianxiaQualityBar(): XianxiaQualityBar | null {
+  try {
+    if (!existsSync(XIANXIA_QUALITY_BAR_PATH)) return null;
+    const raw = readFileSync(XIANXIA_QUALITY_BAR_PATH, 'utf-8');
+    const parsed = JSON.parse(raw);
+    // 支持数组或对象格式
+    const card = Array.isArray(parsed) ? parsed[0] : parsed;
+    return {
+      designPrinciples: card.designPrinciples ?? [],
+      uiRules: card.uiRules ?? [],
+      characterArtRules: card.characterArtRules ?? [],
+      sceneArtRules: card.sceneArtRules ?? [],
+      enemyArtRules: card.enemyArtRules ?? [],
+      progressionRules: card.progressionRules ?? [],
+      schemas: card.schemas ?? [],
+      antiP2WRules: card.antiP2WRules ?? [],
+      antiGlowRules: card.antiGlowRules ?? [],
+      antiNoiseRules: card.antiNoiseRules ?? [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+function buildXianxiaQualitySection(): string {
+  const bar = loadXianxiaQualityBar();
+  if (!bar) return '';
+
+  const sections: string[] = [];
+
+  if (bar.designPrinciples.length > 0) {
+    sections.push('## 设计原则', ...bar.designPrinciples.map((p) => `- ${p}`));
+  }
+  if (bar.uiRules.length > 0) {
+    sections.push('## UI 质量规则', ...bar.uiRules.map((r) => `- ${r}`));
+  }
+  if (bar.characterArtRules.length > 0) {
+    sections.push('## 角色美术规则', ...bar.characterArtRules.map((r) => `- ${r}`));
+  }
+  if (bar.sceneArtRules.length > 0) {
+    sections.push('## 场景美术规则', ...bar.sceneArtRules.map((r) => `- ${r}`));
+  }
+  if (bar.enemyArtRules.length > 0) {
+    sections.push('## 敌人设计规则', ...bar.enemyArtRules.map((r) => `- ${r}`));
+  }
+  if (bar.progressionRules.length > 0) {
+    sections.push('## 数值/成长规则', ...bar.progressionRules.map((r) => `- ${r}`));
+  }
+  if (bar.antiGlowRules && bar.antiGlowRules.length > 0) {
+    sections.push('## 反过度发光规则', ...bar.antiGlowRules.map((r) => `- ${r}`));
+  }
+  if (bar.antiNoiseRules && bar.antiNoiseRules.length > 0) {
+    sections.push('## 反信息噪音规则', ...bar.antiNoiseRules.map((r) => `- ${r}`));
+  }
+  if (bar.antiP2WRules && bar.antiP2WRules.length > 0) {
+    sections.push('## 反 P2W 设计约束', ...bar.antiP2WRules.map((r) => `- ${r}`));
+  }
+
+  return sections.length > 0 ? sections.join('\n\n') : '';
+}
 
 /* ===================== 风格包库 ===================== */
 
@@ -549,10 +639,16 @@ export function generateStyleAndMotion(
     packageId,
   };
 
-  // 修仙/仙侠/RPG 品类自动生成美术方向指南
+  // 修仙/仙侠/RPG 品类自动生成美术方向指南 + 注入质量知识卡规则
   if (/修仙|仙侠|国风|rpg|放置|江湖/.test(gameType.toLowerCase())) {
     const artPkg = getArtDirectionPackage();
     result.artDirection = generateArtDirection(artPkg);
+
+    // 读取 xianxia-idle-quality-bar.json 并注入到 Style Guide
+    const qualitySection = buildXianxiaQualitySection();
+    if (qualitySection) {
+      result.styleGuide += '\n\n---\n\n' + qualitySection;
+    }
   }
 
   return result;

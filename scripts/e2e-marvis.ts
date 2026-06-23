@@ -13,7 +13,7 @@ import { Gateway } from '../orchestration/gateway.js';
 import { MarvisAdapter } from '../adapters/marvis-adapter.js';
 
 const WORKSPACE = process.argv[3]
-  ?? 'D:\\Marvis\\手游AI开发Agent\\e2e-output';
+  ?? 'D:\\path\\to\\mobile-game-agent\\e2e-output';
 
 const TASK = process.argv[2]
   ?? '开发一款修仙放置手游，点击修炼突破境界，离线自动挂机，10级成就系统';

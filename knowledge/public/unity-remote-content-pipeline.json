@@ -1,0 +1,35 @@
+[
+  {
+    "type": "public-engine-heuristic",
+    "title": "Unity content bundle resource pipeline for mobile games",
+    "tags": ["unity", "content-bundle", "resource-pipeline", "hot-update", "cdn", "mobile-game", "versioning"],
+    "summary": "Production Unity mobile games rely on an content bundle-based resource pipeline that separates the slim native binary from remotely delivered assets. The pipeline covers bundle splitting strategies, dependency manifest management, CDN-based distribution, delta hot-update flows, version integrity verification, and graceful fallback. These patterns apply equally to Godot .pck or Web fetch-based asset loading as general mobile game resource delivery principles.",
+    "designRules": [
+      "Keep the base Android install package/IPA as small as possible; ship only critical launch assets locally; download everything else on first launch or on-demand.",
+      "Split content bundles by logical axis: per-scene bundles, per-feature bundles, shared-library bundles, and high-churn bundles (config tables, runtime script scripts, UI templates).",
+      "Every content bundle build must produce a catalog manifest listing bundle name, version, dependencies, file size, and integrity hash.",
+      "Remote resource index (version manifest) lives on CDN and is fetched first on launch; it declares the latest version, per-bundle metadata, and CDN base URL.",
+      "Hot-update flow: fetch remote version manifest → compare with local manifest → compute delta (added, modified, deleted bundles) → download delta bundles with retry and resume → verify integrity per bundle → atomically swap local catalog → apply changes on next launch or live-reload.",
+      "Integrity verification uses content hashing (MD5, SHA256, or CRC32) on each downloaded bundle before accepting it; reject and retry on mismatch.",
+      "Graceful fallback: if CDN is unreachable or version check fails, continue with currently cached local bundles; never block the player from entering the game.",
+      "Asset classification: UI engineTemplates/atlases, 3D models/textures/materials, audio clips, scene bundles, configuration tables (ScriptableObject/JSON/runtime script tables), and runtime script script bundles each belong to dedicated content bundle groups with independent update cadences."
+    ],
+    "assetClassification": {
+      "ui": "UI engineTemplates, sprite atlases, fonts. Updated frequently with UI changes. Packed per-feature or per-panel group.",
+      "models": "3D meshes, textures, materials, animations, avatar parts. Large size, moderate update frequency. Packed per-character or per-scene.",
+      "audio": "BGM, SFX, voice-over clips. Streamed or preloaded. Grouped by audio bank with compression level control.",
+      "scenes": "Unity scene files and their exclusive dependencies. Each scene and its unique assets form one bundle; shared assets go to shared bundles.",
+      "config": "Game balance tables, localization strings, feature flags. Small size, very high update frequency. Packed as a single small bundle for fast delta sync.",
+      "runtime-script": "runtime script source or bytecode scripts. High update frequency. Packed as a single bundle or split by module for large codebases."
+    },
+    "versioningStrategy": {
+      "scheme": "Semantic versioning for the overall resource catalog; per-bundle content hashing for deduplication and delta detection.",
+      "manifest": "Remote catalog JSON declares: version string, min-app-version, per-bundle (name, hash, size, dependencies, CDN relative path, compression).",
+      "delta": "Client compares local hash against remote hash per bundle; downloads only bundles whose hash differs. Supports byte-level patching for large bundles when network is constrained.",
+      "rollback": "Keep the previous successful catalog snapshot; if the new version fails to load (crash count threshold or integrity check failure), automatically revert to the previous snapshot on next launch."
+    },
+    "mgaiUsage": "When generating Unity, Godot, or Web game project scaffolds, produce a RESOURCE_PIPELINE.md describing the bundle splitting strategy, manifest schema, version check flow, integrity verification method, CDN layout, and fallback policy. Also generate a resource-classification table mapping asset types to bundle groups.",
+    "sourcePolicy": "Public-safe generalized resource pipeline pattern derived from community knowledge of Unity content bundle workflows. No proprietary bundle names, CDN endpoints, decompiled code, or app-specific metadata.",
+    "confidence": 0.85
+  }
+]

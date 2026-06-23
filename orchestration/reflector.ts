@@ -16,6 +16,7 @@ import type {
   AcceptanceCriterion,
   AgentError,
 } from '../protocol/agent-protocol';
+import { validateManifest } from './manifest-validator';
 
 /* ---- 错误截断 ---- */
 
@@ -195,6 +196,50 @@ export function reflect(
         passed: true,
         detail: `错误列表已截断：${before} → ${stepRecord.result.errors.length} 条`,
       });
+    }
+  }
+
+  // 8. [Android SDK] Manifest 规则校验（仅对 android-sdk-integration 步骤生效）
+  if (stepRecord.plan.title === 'android-sdk-integration') {
+    const manifestResult = validateManifest({
+      mainActivityClass: 'com.unity3d.player.UnityPlayerActivity',
+      unityMetadataKeys: [
+        'unityplayer.UnityActivity',
+        'unityplayer.ForwardNativeEventsToDalvik',
+      ],
+      screenOrientation: 'sensorLandscape',
+      configChanges: 'orientation|screenSize|keyboardHidden',
+      componentExportedMap: {
+        'com.unity3d.player.UnityPlayerActivity': true,
+        'com.google.android.gms.ads.AdActivity': false,
+      },
+      fileProviderAuthorities: ['com.example.unitygame.fileprovider'],
+      permissions: [
+        'android.permission.INTERNET',
+        'android.permission.ACCESS_NETWORK_STATE',
+      ],
+      sdkComponents: [],
+      containsPotentialSecrets: false,
+      smokeTestDocExists: false,
+    });
+
+    checks.push({
+      type: 'code-quality',
+      criterionId: 'manifest-validation',
+      passed: manifestResult.passed,
+      detail: manifestResult.summary,
+    });
+
+    if (!manifestResult.passed) {
+      for (const issue of manifestResult.issues.filter(
+        (i) => i.severity === 'error',
+      )) {
+        corrections.push({
+          description: `[Manifest] ${issue.message} — ${issue.suggestion}`,
+          action: 'manual',
+          params: { rule: issue.rule },
+        });
+      }
     }
   }
 
