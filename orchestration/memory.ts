@@ -1,11 +1,14 @@
-﻿/**
- * 璁板繂绯荤粺 鈥?璺ㄤ細璇濅笂涓嬫枃瀛樺偍 (Barrel Export)
+/**
+ * Memory system barrel export.
  *
- * 瀵煎嚭锛? * - MemorySystem       鈫?鏃х増鏂囦欢绾?JSON 瀛樺偍锛堝吋瀹癸級
- * - Persistence        鈫?P0 SQLite 鎸佷箙鍖栧眰
- * - MemoryManager      鈫?P0+P1+P2+P3 鍏ㄨ仈鍔ㄨ蹇嗙鐞嗗櫒
- * - Embedder           鈫?P3 鏂囨湰宓屽叆鎺ュ彛 + 瀹炵幇
- * - VectorIndex        鈫?P3 闆朵緷璧栧悜閲忕储寮? * - LRUCache           鈫?P2 LRU 缂撳瓨锛坮e-export锛? */
+ * Exports:
+ * - MemorySystem: file-based JSON memory store for compatibility
+ * - Persistence: SQLite persistence layer
+ * - MemoryManager: unified memory manager
+ * - Embedder: text embedding interface and implementations
+ * - VectorIndex: dependency-free vector search index
+ * - LRUCache: in-memory LRU cache
+ */
 
 export { MemorySystem } from './memory-system';
 export type { MemoryEntry, MemoryQuery, MemoryStats } from './memory-system';

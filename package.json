@@ -39,8 +39,9 @@
     "build": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "encoding-check": "node scripts/check-encoding.mjs",
     "typecheck": "tsc --noEmit",
-    "check": "tsc --noEmit && vitest run",
+    "check": "npm run encoding-check && tsc --noEmit && vitest run",
     "self-check": "npx tsx cli/mgai.ts test --self-check",
     "cli": "npx tsx cli/mgai.ts",
     "dashboard": "npx tsx cli/mgai.ts dashboard"
