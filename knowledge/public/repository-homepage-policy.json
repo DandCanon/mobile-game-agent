@@ -1,0 +1,23 @@
+{
+  "packId": "public-repository-homepage-policy",
+  "sourcePolicy": "Public-safe documentation policy. Contains no private data, extracted assets, proprietary paths, or internal reports.",
+  "cards": [
+    {
+      "id": "public-doc-homepage-minimal-policy",
+      "type": "public-documentation-policy",
+      "title": "Public Repository Homepage Minimal Policy",
+      "tags": ["readme", "github", "documentation", "public-safe", "homepage"],
+      "summary": "Keep public repository homepages focused on product identity, install, usage, and stable capabilities. Do not expose internal planning tracks or detailed private-data boundary lists on the homepage.",
+      "designRules": [
+        "For README homepage content, prefer concise sections for features, install, MCP setup, configuration, project structure, collaboration usage, and license.",
+        "Do not generate homepage sections named Roadmap, Private Knowledge, or equivalent internal policy displays.",
+        "Do not link internal planning documents from the homepage when the link mainly exposes future-track details rather than user-facing usage.",
+        "Keep repository safety policy in implementation guardrails and ignored files; do not turn it into prominent homepage copy.",
+        "When updating public docs, scan the homepage for internal roadmap language, private-data policy language, package references, resource-location wording, and raw-report wording before release."
+      ],
+      "mgaiUsage": "When mgai generates or reviews README/homepage documentation, apply this policy before producing the final file. If a homepage contains internal roadmap or private knowledge boundary sections, recommend removing them from README and keeping the homepage user-facing.",
+      "sourceLayer": "public",
+      "confidence": 0.95
+    }
+  ]
+}
